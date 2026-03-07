@@ -245,6 +245,158 @@ def _build_convergence_tree(words, labels, proto_form, aligned):
     return tree
 
 
+def reconstruct_tree(tree):
+    """Reconstruct a tree bottom-up.
+
+    Tree format:
+    {
+        "label": "Proto-Language",
+        "children": [
+            {
+                "label": "Branch A",
+                "ipa": "",          # empty => reconstruct from descendants
+                "children": [
+                    {"label": "French", "ipa": "pɛːr"},
+                    {"label": "Italian", "ipa": "padre"}
+                ]
+            },
+            ...
+        ]
+    }
+
+    Returns the tree with all missing ipa fields filled in via reconstruction,
+    plus alignment/distance metadata.
+    """
+    if not tree or "children" not in tree or len(tree.get("children", [])) < 1:
+        return {"error": "Tree must have at least one intermediate child"}
+
+    result_tree = _reconstruct_node(tree)
+    if "error" in result_tree:
+        return result_tree
+
+    # Collect all pairwise distances between leaves
+    leaves = _collect_leaves(result_tree)
+    distances = []
+    for i, l1 in enumerate(leaves):
+        for j, l2 in enumerate(leaves):
+            if i < j:
+                try:
+                    fed = feature_edit_distance(l1["ipa"], l2["ipa"])
+                    ned = normalized_edit_distance(l1["ipa"], l2["ipa"])
+                    divergence = estimate_from_ned(ned)
+                    distances.append({
+                        "lang1": l1["label"],
+                        "lang2": l2["label"],
+                        "word1": l1["ipa"],
+                        "word2": l2["ipa"],
+                        "feature_edit_distance": round(fed, 4),
+                        "normalized_edit_distance": round(ned, 4),
+                        "divergence": divergence,
+                    })
+                except Exception:
+                    distances.append({
+                        "lang1": l1["label"],
+                        "lang2": l2["label"],
+                        "word1": l1["ipa"],
+                        "word2": l2["ipa"],
+                        "feature_edit_distance": None,
+                        "normalized_edit_distance": None,
+                        "divergence": None,
+                    })
+
+    return {
+        "tree": result_tree,
+        "distances": distances,
+    }
+
+
+def _reconstruct_node(node):
+    """Recursively reconstruct a node bottom-up."""
+    children = node.get("children")
+
+    # Leaf node (descendant) — must have ipa
+    if not children:
+        ipa = (node.get("ipa") or "").strip()
+        if not ipa:
+            return {"error": f"Descendant '{node.get('label', '?')}' is missing IPA input"}
+        return {
+            "label": node.get("label", ""),
+            "ipa": ipa,
+            "type": "descendant",
+            "reconstructed": False,
+        }
+
+    # Has children — process children first
+    resolved_children = []
+    for child in children:
+        resolved = _reconstruct_node(child)
+        if "error" in resolved:
+            return resolved
+        resolved_children.append(resolved)
+
+    label = node.get("label", "")
+    ipa = (node.get("ipa") or "").strip()
+
+    # If this node has no ipa, reconstruct from children
+    if not ipa:
+        child_words = _collect_ipa_from_children(resolved_children)
+        if len(child_words) < 2:
+            # Only one child — just propagate its form
+            if len(child_words) == 1:
+                ipa = child_words[0]
+            else:
+                return {"error": f"Node '{label}' has no IPA input and no descendants to reconstruct from"}
+        else:
+            try:
+                msa = Multiple(child_words)
+                msa.prog_align()
+                aligned = msa.alm_matrix
+                proto_segments = []
+                num_cols = len(aligned[0]) if aligned else 0
+                for col_idx in range(num_cols):
+                    column = [row[col_idx] for row in aligned]
+                    proto_seg = _majority_vote_column(column)
+                    proto_segments.append(proto_seg)
+                ipa = "".join(seg for seg in proto_segments if seg != "-")
+            except Exception as e:
+                return {"error": f"Reconstruction failed for '{label}': {str(e)}"}
+        reconstructed = True
+    else:
+        reconstructed = False
+
+    # Determine type: root (no parent context) or intermediate
+    is_root = node.get("_is_root", False)
+    node_type = "root" if is_root else "intermediate"
+
+    return {
+        "label": label,
+        "ipa": ipa,
+        "type": node_type,
+        "reconstructed": reconstructed,
+        "children": resolved_children,
+    }
+
+
+def _collect_ipa_from_children(children):
+    """Collect all ipa values from resolved child nodes (recursively flattens)."""
+    result = []
+    for child in children:
+        ipa = child.get("ipa", "").strip()
+        if ipa:
+            result.append(ipa)
+    return result
+
+
+def _collect_leaves(node):
+    """Collect all leaf nodes from a resolved tree."""
+    if not node.get("children"):
+        return [node]
+    leaves = []
+    for child in node["children"]:
+        leaves.extend(_collect_leaves(child))
+    return leaves
+
+
 def reconstruct_from_dataset_entry(index):
     data = load_dataset()
     if index < 0 or index >= len(data):

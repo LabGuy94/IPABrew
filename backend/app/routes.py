@@ -6,6 +6,7 @@ from app.reconstruction import (
     align_words,
     reconstruct_from_cognates,
     reconstruct_from_dataset_entry,
+    reconstruct_tree,
 )
 from app.ipa_utils import ipa_distance_report, get_features
 from app.glottochronology import (
@@ -56,6 +57,18 @@ def reconstruct():
         return jsonify({"error": "Need at least 2 cognate words"}), 400
 
     result = reconstruct_from_cognates(words, languages if languages else None)
+    return jsonify(result)
+
+
+@api.route("/reconstruct_tree", methods=["POST"])
+def reconstruct_tree_route():
+    data = request.get_json()
+    if not data or "tree" not in data:
+        return jsonify({"error": "JSON body with 'tree' field required"}), 400
+
+    tree = data["tree"]
+    tree["_is_root"] = True
+    result = reconstruct_tree(tree)
     return jsonify(result)
 
 
