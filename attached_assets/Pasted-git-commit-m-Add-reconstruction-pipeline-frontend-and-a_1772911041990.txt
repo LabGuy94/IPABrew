@@ -1,0 +1,64 @@
+git commit -m "Add reconstruction pipeline, frontend, and all features"
+git pull origin master --rebase
+git push origin master
+On branch master
+Your branch is ahead of 'origin/master' by 2 commits.
+  (use "git push" to publish your local commits)
+
+nothing to commit, working tree clean
+remote: Enumerating objects: 16, done.
+remote: Counting objects: 100% (16/16), done.
+remote: Compressing objects: 100% (10/10), done.
+remote: Total 12 (delta 0), reused 12 (delta 0), pack-reused 0 (from 0)
+Unpacking objects: 100% (12/12), 7.84 KiB | 3.92 MiB/s, done.
+From https://github.com/LabGuy94/stang-26
+ * branch            master     -> FETCH_HEAD
+   b46dadb..a1d1960  master     -> origin/master
+Auto-merging backend/app/__init__.py
+CONFLICT (content): Merge conflict in backend/app/__init__.py
+Auto-merging backend/app/static/css/style.css
+CONFLICT (add/add): Merge conflict in backend/app/static/css/style.css
+Auto-merging backend/app/static/js/app.js
+CONFLICT (add/add): Merge conflict in backend/app/static/js/app.js
+error: could not apply bb27428... Add proto-language reconstruction tools with IPA distance and dating features
+hint: Resolve all conflicts manually, mark them as resolved with
+hint: "git add/rm <conflicted_files>", then run "git rebase --continue".
+hint: You can instead skip this commit: run "git rebase --skip".
+hint: To abort and get back to the state before "git rebase", run "git rebase --abort".
+hint: Disable this message with "git config set advice.mergeConflict false"
+Could not apply bb27428... # Add proto-language reconstruction tools with IPA distance and dating features
+To https://github.com/LabGuy94/stang-26
+ ! [rejected]        master -> master (non-fast-forward)
+error: failed to push some refs to 'https://github.com/LabGuy94/stang-26'
+hint: Updates were rejected because a pushed branch tip is behind its remote
+hint: counterpart. If you want to integrate the remote changes, use 'git pull'
+hint: before pushing again.
+hint: See the 'Note about fast-forwards' in 'git push --help' for details.
+~/workspace$ git add -A
+git commit -m "Add reconstruction pipeline, frontend, and all features"
+git pull origin master --rebase
+git push origin master
+[detached HEAD 0d5c0af] Add reconstruction pipeline, frontend, and all features
+ 13 files changed, 8334 insertions(+), 1 deletion(-)
+ create mode 100644 backend/app/glottochronology.py
+ create mode 100644 backend/app/ipa_utils.py
+ create mode 100644 backend/app/reconstruction.py
+ create mode 100644 backend/app/templates/index.html
+ create mode 100644 backend/data/romance_ipa.tsv
+From https://github.com/LabGuy94/stang-26
+ * branch            master     -> FETCH_HEAD
+fatal: It seems that there is already a rebase-merge directory, and
+I wonder if you are in the middle of another rebase.  If that is the
+case, please try
+    git rebase (--continue | --abort | --skip)
+If that is not the case, please
+    rm -fr ".git/rebase-merge"
+and run me again.  I am stopping in case you still have something
+valuable there.
+
+To https://github.com/LabGuy94/stang-26
+ ! [rejected]        master -> master (non-fast-forward)
+error: failed to push some refs to 'https://github.com/LabGuy94/stang-26'
+hint: Updates were rejected because a pushed branch tip is behind its remote
+hint: counterpart. If you want to integrate the remote changes, use 'git pull'
+hint: before pushing again.
