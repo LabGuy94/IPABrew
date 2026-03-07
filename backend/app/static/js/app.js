@@ -131,19 +131,59 @@ function displayResults(result) {
         return;
     }
 
-    document.getElementById('proto-form-display').textContent = result.proto_form;
+    const protoDisplay = document.getElementById('proto-form-display');
+    protoDisplay.textContent = result.proto_form;
+    const protoBtn = document.createElement('button');
+    protoBtn.className = 'pronounce-btn';
+    protoBtn.innerHTML = '&#x1f50a; Listen';
+    protoBtn.dataset.ipa = result.proto_form.replace(/^\*/, '');
+    protoBtn.addEventListener('click', () => pronounceIPA(protoBtn.dataset.ipa));
+    protoDisplay.appendChild(protoBtn);
 
     const actualEl = document.getElementById('actual-latin');
     if (result.actual_latin) {
         actualEl.style.display = 'block';
-        actualEl.innerHTML = `Actual Latin: <span>${result.actual_latin}</span>`;
+        actualEl.innerHTML = '';
+        actualEl.appendChild(document.createTextNode('Actual Latin: '));
+        const latinSpan = document.createElement('span');
+        latinSpan.textContent = result.actual_latin;
+        actualEl.appendChild(latinSpan);
+        const latinBtn = document.createElement('button');
+        latinBtn.className = 'pronounce-btn';
+        latinBtn.innerHTML = '&#x1f50a;';
+        latinBtn.dataset.ipa = result.actual_latin;
+        latinBtn.addEventListener('click', () => pronounceIPA(latinBtn.dataset.ipa));
+        actualEl.appendChild(latinBtn);
     } else {
         actualEl.style.display = 'none';
     }
 
     if (result.tree) drawConvergenceTree(result.tree);
     if (result.alignment) displayAlignment(result.alignment, result.languages);
+    if (result.correspondences) displayCorrespondences(result.correspondences, result.languages);
     if (result.distances) displayDistances(result.distances);
+}
+
+function displayCorrespondences(correspondences, languages) {
+    const container = document.getElementById('correspondence-display');
+    if (!container || !correspondences || correspondences.length === 0) return;
+
+    let html = '<table class="correspondence-table"><thead><tr><th>Position</th>';
+    if (languages) languages.forEach(l => { html += `<th>${l}</th>`; });
+    html += '<th>Proto</th><th>Freq</th></tr></thead><tbody>';
+
+    correspondences.forEach((corr, i) => {
+        html += `<tr><td>${i + 1}</td>`;
+        corr.segments.forEach(seg => {
+            html += `<td>${seg}</td>`;
+        });
+        html += `<td class="proto-col">${corr.proto}</td>`;
+        html += `<td class="freq-col">${corr.frequency || ''}</td>`;
+        html += '</tr>';
+    });
+
+    html += '</tbody></table>';
+    container.innerHTML = html;
 }
 
 function displayAlignment(alignment, languages) {
@@ -178,7 +218,6 @@ function highlightMatchingColumns() {
     const numCols = rows[0].querySelectorAll('td').length;
     for (let col = 1; col < numCols; col++) {
         const vals = new Set();
-        let allSame = true;
         rows.forEach(row => {
             const cell = row.querySelectorAll('td')[col];
             if (cell) {
@@ -576,3 +615,28 @@ document.getElementById('btn-distance').addEventListener('click', async () => {
         </div>
     `;
 });
+
+window.pronounceIPA = function(text) {
+    const clean = text.replace(/[*\[\]\/]/g, '');
+    if (!clean) return;
+
+    if ('speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+        const utter = new SpeechSynthesisUtterance(clean);
+        utter.rate = 0.7;
+        utter.pitch = 1.0;
+        utter.lang = 'la';
+        const voices = window.speechSynthesis.getVoices();
+        const preferred = voices.find(v => v.lang.startsWith('it')) ||
+                          voices.find(v => v.lang.startsWith('es')) ||
+                          voices.find(v => v.lang.startsWith('la')) ||
+                          voices.find(v => v.lang.startsWith('pt'));
+        if (preferred) utter.voice = preferred;
+        window.speechSynthesis.speak(utter);
+    }
+};
+
+if ('speechSynthesis' in window) {
+    window.speechSynthesis.getVoices();
+    window.speechSynthesis.onvoiceschanged = () => window.speechSynthesis.getVoices();
+}
