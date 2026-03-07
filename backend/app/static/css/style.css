@@ -1,0 +1,217 @@
+/* IPABier — Custom styles */
+
+/* ── Base ── */
+* { box-sizing: border-box; }
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+/* ── Status indicator ── */
+.status-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #6b7280;
+    display: inline-block;
+    transition: background 0.3s;
+}
+
+.status-dot.connected {
+    background: #10b981;
+    box-shadow: 0 0 6px #10b98180;
+}
+
+.status-dot.error {
+    background: #ef4444;
+    box-shadow: 0 0 6px #ef444480;
+}
+
+/* ── Scrollbar ── */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #374151; border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: #4b5563; }
+
+/* ── Cognate entry cards ── */
+.cognate-entry {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 0.625rem;
+    background: rgba(15, 23, 42, 0.6);
+    border: 1px solid rgba(75, 85, 99, 0.4);
+    border-radius: 0.5rem;
+    transition: border-color 0.15s, background 0.15s;
+}
+
+.cognate-entry:hover {
+    border-color: rgba(75, 85, 99, 0.7);
+    background: rgba(15, 23, 42, 0.8);
+}
+
+.cognate-entry .lang-badge {
+    flex-shrink: 0;
+    font-size: 0.625rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #94a3b8;
+    background: rgba(51, 65, 85, 0.6);
+    padding: 0.125rem 0.375rem;
+    border-radius: 0.25rem;
+    min-width: 3rem;
+    text-align: center;
+}
+
+.cognate-entry .word-text {
+    flex: 1;
+    font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
+    font-size: 0.875rem;
+    color: #e2e8f0;
+}
+
+.cognate-entry .btn-remove {
+    flex-shrink: 0;
+    width: 1.25rem;
+    height: 1.25rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 0.25rem;
+    color: #4b5563;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    transition: color 0.15s, background 0.15s;
+    font-size: 0.75rem;
+    line-height: 1;
+}
+
+.cognate-entry .btn-remove:hover {
+    color: #ef4444;
+    background: rgba(239, 68, 68, 0.1);
+}
+
+/* ── Tree SVG ── */
+#tree-container svg {
+    width: 100%;
+    height: 100%;
+    cursor: grab;
+}
+
+#tree-container svg:active {
+    cursor: grabbing;
+}
+
+/* Links */
+.tree-link {
+    fill: none;
+    stroke: #334155;
+    stroke-width: 1.5px;
+    transition: stroke 0.2s;
+}
+
+.tree-link:hover {
+    stroke: #64748b;
+}
+
+/* Nodes */
+.tree-node {
+    cursor: pointer;
+}
+
+.tree-node circle {
+    stroke-width: 2px;
+    transition: r 0.15s, stroke 0.2s, filter 0.2s;
+}
+
+.tree-node:hover circle {
+    r: 8;
+    filter: drop-shadow(0 0 4px currentColor);
+}
+
+.tree-node.node-root circle {
+    fill: #f59e0b;
+    stroke: #fbbf24;
+}
+
+.tree-node.node-branch circle {
+    fill: #3b82f6;
+    stroke: #60a5fa;
+}
+
+.tree-node.node-leaf circle {
+    fill: #10b981;
+    stroke: #34d399;
+}
+
+.tree-node.selected circle {
+    stroke-width: 3px;
+    filter: drop-shadow(0 0 8px currentColor);
+}
+
+.tree-node text {
+    fill: #cbd5e1;
+    font-size: 11px;
+    font-weight: 500;
+    paint-order: stroke;
+    stroke: #020617;
+    stroke-width: 3px;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+.tree-node .node-sublabel {
+    fill: #64748b;
+    font-size: 9px;
+    font-weight: 400;
+    font-family: 'SF Mono', 'Fira Code', monospace;
+}
+
+/* ── Detail panel ── */
+.detail-section {
+    margin-bottom: 1rem;
+}
+
+.detail-section h3 {
+    font-size: 0.625rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: #64748b;
+    margin-bottom: 0.375rem;
+}
+
+.detail-section .detail-value {
+    font-size: 0.875rem;
+    color: #e2e8f0;
+}
+
+.detail-section .detail-value.mono {
+    font-family: 'SF Mono', 'Fira Code', monospace;
+}
+
+.detail-tag {
+    display: inline-block;
+    font-size: 0.625rem;
+    font-weight: 600;
+    padding: 0.125rem 0.5rem;
+    border-radius: 9999px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.detail-tag.proto { background: rgba(245, 158, 11, 0.15); color: #fbbf24; }
+.detail-tag.branch { background: rgba(59, 130, 246, 0.15); color: #60a5fa; }
+.detail-tag.leaf { background: rgba(16, 185, 129, 0.15); color: #34d399; }
+
+/* ── Animations ── */
+@keyframes fade-in {
+    from { opacity: 0; transform: translateY(4px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.cognate-entry {
+    animation: fade-in 0.15s ease-out;
+}

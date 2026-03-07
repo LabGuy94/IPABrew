@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IPABier — Proto-Language Reconstruction</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        surface: { 50: '#f8fafc', 100: '#f1f5f9', 700: '#1e293b', 800: '#0f172a', 900: '#020617', 950: '#010313' },
+                        accent: { 400: '#60a5fa', 500: '#3b82f6', 600: '#2563eb' },
+                        node: { root: '#f59e0b', branch: '#3b82f6', leaf: '#10b981' }
+                    }
+                }
+            }
+        }
+    </script>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body class="bg-surface-900 text-gray-100 min-h-screen flex flex-col overflow-hidden">
+
+    <!-- Header -->
+    <header class="flex items-center justify-between border-b border-gray-700/50 px-6 py-3 bg-surface-800/80 backdrop-blur">
+        <div class="flex items-center gap-3">
+            <div class="w-8 h-8 rounded-lg bg-accent-500 flex items-center justify-center text-sm font-bold">IP</div>
+            <div>
+                <h1 class="text-lg font-semibold tracking-tight leading-none">IPABier</h1>
+                <p class="text-xs text-gray-500 leading-none mt-0.5">Proto-language reconstruction</p>
+            </div>
+        </div>
+        <div id="status-badge" class="flex items-center gap-2 text-xs text-gray-500">
+            <span class="status-dot"></span>
+            <span id="status-text">Connecting...</span>
+        </div>
+    </header>
+
+    <!-- Main layout -->
+    <main class="flex flex-1 overflow-hidden">
+
+        <!-- Left panel: Cognate input -->
+        <aside class="w-80 border-r border-gray-700/50 bg-surface-800/40 flex flex-col">
+            <div class="px-4 py-3 border-b border-gray-700/50">
+                <h2 class="text-sm font-semibold text-gray-300">Cognate Sets</h2>
+                <p class="text-xs text-gray-500 mt-0.5">Add words from related languages to reconstruct their ancestor.</p>
+            </div>
+
+            <!-- Cognate entries list -->
+            <div id="cognate-list" class="flex-1 overflow-y-auto p-3 space-y-2">
+                <!-- Entries are injected by JS -->
+            </div>
+
+            <!-- Add entry form -->
+            <div class="p-3 border-t border-gray-700/50 space-y-2">
+                <div class="flex gap-2">
+                    <input
+                        id="input-language"
+                        type="text"
+                        placeholder="Language"
+                        class="flex-1 rounded-md bg-surface-900 border border-gray-700 px-3 py-1.5 text-sm text-gray-100 placeholder-gray-600 focus:outline-none focus:ring-1 focus:ring-accent-500 focus:border-accent-500 transition"
+                    >
+                    <input
+                        id="input-word"
+                        type="text"
+                        placeholder="IPA form"
+                        class="flex-1 rounded-md bg-surface-900 border border-gray-700 px-3 py-1.5 text-sm text-gray-100 placeholder-gray-600 focus:outline-none focus:ring-1 focus:ring-accent-500 focus:border-accent-500 transition font-mono"
+                    >
+                </div>
+                <button id="btn-add-word" class="w-full rounded-md bg-surface-700 border border-gray-600 px-3 py-1.5 text-sm text-gray-300 hover:bg-surface-800 hover:border-gray-500 hover:text-gray-100 transition flex items-center justify-center gap-1.5">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+                    Add word
+                </button>
+            </div>
+
+            <!-- Action buttons -->
+            <div class="p-3 border-t border-gray-700/50 space-y-2">
+                <button id="btn-reconstruct" class="w-full rounded-md bg-accent-600 px-4 py-2 text-sm font-medium text-white hover:bg-accent-500 transition shadow-lg shadow-accent-600/20">
+                    Reconstruct Tree
+                </button>
+                <button id="btn-demo" class="w-full rounded-md bg-surface-700 border border-gray-600 px-3 py-1.5 text-xs text-gray-400 hover:text-gray-200 hover:border-gray-500 transition">
+                    Load demo data
+                </button>
+            </div>
+        </aside>
+
+        <!-- Center: Tree visualization -->
+        <section class="flex-1 flex flex-col min-w-0">
+            <div class="flex items-center justify-between px-4 py-2 border-b border-gray-700/50 bg-surface-800/20">
+                <span class="text-xs text-gray-500 font-medium">Tree Visualization</span>
+                <div class="flex gap-1">
+                    <button id="btn-zoom-in" class="p-1 rounded hover:bg-surface-700 text-gray-500 hover:text-gray-300 transition" title="Zoom in">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+                    </button>
+                    <button id="btn-zoom-out" class="p-1 rounded hover:bg-surface-700 text-gray-500 hover:text-gray-300 transition" title="Zoom out">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 12H4"/></svg>
+                    </button>
+                    <button id="btn-zoom-reset" class="p-1 rounded hover:bg-surface-700 text-gray-500 hover:text-gray-300 transition" title="Reset view">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"/></svg>
+                    </button>
+                </div>
+            </div>
+            <div id="tree-container" class="flex-1 relative">
+                <div id="tree-empty" class="absolute inset-0 flex flex-col items-center justify-center text-gray-600 gap-3">
+                    <svg class="w-16 h-16 opacity-30" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z"/>
+                    </svg>
+                    <div class="text-center">
+                        <p class="text-sm font-medium text-gray-500">No tree yet</p>
+                        <p class="text-xs text-gray-600 mt-1">Add cognate words and click Reconstruct Tree,<br>or load demo data to explore.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Right panel: Node details -->
+        <aside class="w-72 border-l border-gray-700/50 bg-surface-800/40 flex flex-col">
+            <div class="px-4 py-3 border-b border-gray-700/50">
+                <h2 class="text-sm font-semibold text-gray-300">Node Details</h2>
+            </div>
+            <div id="detail-panel" class="flex-1 overflow-y-auto p-4">
+                <div class="text-center text-gray-600 mt-8">
+                    <p class="text-sm">Click a node in the tree<br>to inspect it.</p>
+                </div>
+            </div>
+        </aside>
+
+    </main>
+
+    <script src="/static/js/app.js"></script>
+</body>
+</html>
