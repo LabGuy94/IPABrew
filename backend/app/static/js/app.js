@@ -122,6 +122,51 @@ document.getElementById('btn-clear').addEventListener('click', () => {
 const DEMOS = {
     'Romance': [
         {
+            name: '"rod" (virga)',
+            root: 'Proto-Romance',
+            branches: [
+                { label: 'Western', ipa: '', descendants: [
+                    { label: 'French', ipa: 'v\u025b\u0281\u0292' },
+                    { label: 'Spanish', ipa: 'be\u027e\u0263a' },
+                    { label: 'Portuguese', ipa: 'v\u025b\u027e\u0259\u0261\u0250' },
+                ]},
+                { label: 'Eastern', ipa: '', descendants: [
+                    { label: 'Italian', ipa: 'ver\u0261a' },
+                    { label: 'Romanian', ipa: 'var\u0261\u0259' },
+                ]},
+            ]
+        },
+        {
+            name: '"whole" (integrum)',
+            root: 'Proto-Romance',
+            branches: [
+                { label: 'Western', ipa: '', descendants: [
+                    { label: 'French', ipa: '\u0251\u0303tje' },
+                    { label: 'Spanish', ipa: 'inte\u0263\u027eo' },
+                    { label: 'Portuguese', ipa: 'i\u014bt\u0268\u0261\u027e\u028a' },
+                ]},
+                { label: 'Eastern', ipa: '', descendants: [
+                    { label: 'Italian', ipa: 'int\u025bro' },
+                    { label: 'Romanian', ipa: 'inte\u0261ru' },
+                ]},
+            ]
+        },
+        {
+            name: '"crumb" (mica)',
+            root: 'Proto-Romance',
+            branches: [
+                { label: 'Western', ipa: '', descendants: [
+                    { label: 'French', ipa: 'mi\u0283' },
+                    { label: 'Spanish', ipa: 'mika' },
+                    { label: 'Portuguese', ipa: 'mik\u0250' },
+                ]},
+                { label: 'Eastern', ipa: '', descendants: [
+                    { label: 'Italian', ipa: 'mika' },
+                    { label: 'Romanian', ipa: 'mik\u0259' },
+                ]},
+            ]
+        },
+        {
             name: '"father" (padre/p\u00e8re)',
             root: 'Proto-Romance',
             branches: [
@@ -136,220 +181,178 @@ const DEMOS = {
                 ]},
             ]
         },
-        {
-            name: '"mother" (madre/m\u00e8re)',
-            root: 'Proto-Romance',
-            branches: [
-                { label: 'Western', ipa: '', descendants: [
-                    { label: 'French', ipa: 'm\u025b\u02d0r' },
-                    { label: 'Spanish', ipa: 'madre' },
-                    { label: 'Portuguese', ipa: 'm\u0250\u0303j' },
-                ]},
-                { label: 'Eastern', ipa: '', descendants: [
-                    { label: 'Italian', ipa: 'madre' },
-                    { label: 'Romanian', ipa: 'mam\u0259' },
-                ]},
-            ]
-        },
-        {
-            name: '"water" (aqua/eau)',
-            root: 'Proto-Romance',
-            branches: [
-                { label: 'Western', ipa: '', descendants: [
-                    { label: 'French', ipa: 'o' },
-                    { label: 'Spanish', ipa: 'a\u0263wa' },
-                    { label: 'Portuguese', ipa: 'a\u0261w\u0250' },
-                ]},
-                { label: 'Eastern', ipa: '', descendants: [
-                    { label: 'Italian', ipa: 'akwa' },
-                    { label: 'Romanian', ipa: 'ap\u0268' },
-                ]},
-            ]
-        },
-        {
-            name: '"night" (nox/nuit)',
-            root: 'Proto-Romance',
-            branches: [
-                { label: 'Italo-Western', ipa: '', descendants: [
-                    { label: 'French', ipa: 'n\u0265i' },
-                    { label: 'Spanish', ipa: 'not\u0283e' },
-                    { label: 'Italian', ipa: 'n\u0254tte' },
-                ]},
-                { label: 'Ibero-Romance', ipa: '', descendants: [
-                    { label: 'Portuguese', ipa: 'nojt\u0283i' },
-                ]},
-            ]
-        },
-    ],
-    'Germanic': [
-        {
-            name: '"water" (Wasser/water)',
-            root: 'Proto-Germanic',
-            branches: [
-                { label: 'West Germanic', ipa: '', descendants: [
-                    { label: 'English', ipa: 'w\u0254\u02d0t\u0259\u0279' },
-                    { label: 'German', ipa: 'vas\u0259\u0281' },
-                    { label: 'Dutch', ipa: 'v\u0251\u02d0t\u0259r' },
-                ]},
-                { label: 'North Germanic', ipa: '', descendants: [
-                    { label: 'Swedish', ipa: 'vat\u0259n' },
-                    { label: 'Icelandic', ipa: 'va\u02d0tn' },
-                ]},
-            ]
-        },
-        {
-            name: '"house" (Haus/hus)',
-            root: 'Proto-Germanic',
-            branches: [
-                { label: 'West Germanic', ipa: '', descendants: [
-                    { label: 'English', ipa: 'ha\u028as' },
-                    { label: 'German', ipa: 'ha\u028as' },
-                    { label: 'Dutch', ipa: 'h\u0259\u028as' },
-                ]},
-                { label: 'North Germanic', ipa: '', descendants: [
-                    { label: 'Swedish', ipa: 'h\u0289\u02d0s' },
-                    { label: 'Icelandic', ipa: 'h\u0289\u02d0s' },
-                ]},
-            ]
-        },
-        {
-            name: '"fish" (Fisch/fisk)',
-            root: 'Proto-Germanic',
-            branches: [
-                { label: 'West Germanic', ipa: '', descendants: [
-                    { label: 'English', ipa: 'f\u026a\u0283' },
-                    { label: 'German', ipa: 'f\u026a\u0283' },
-                    { label: 'Dutch', ipa: 'v\u026as' },
-                ]},
-                { label: 'North Germanic', ipa: '', descendants: [
-                    { label: 'Swedish', ipa: 'f\u026ask' },
-                    { label: 'Icelandic', ipa: 'f\u026askr' },
-                ]},
-            ]
-        },
-    ],
-    'Slavic': [
-        {
-            name: '"fire" (ogon/ohe\u0148)',
-            root: 'Proto-Slavic',
-            branches: [
-                { label: 'East Slavic', ipa: '', descendants: [
-                    { label: 'Russian', ipa: '\u0250\u0261on\u02b2' },
-                    { label: 'Ukrainian', ipa: 'v\u0254\u0261on\u02b2' },
-                ]},
-                { label: 'West Slavic', ipa: '', descendants: [
-                    { label: 'Polish', ipa: '\u0254\u0261\u025b\u0272' },
-                    { label: 'Czech', ipa: '\u0254\u0266\u025b\u0272' },
-                ]},
-            ]
-        },
-        {
-            name: '"eye" (oko/\u043e\u043a\u043e)',
-            root: 'Proto-Slavic',
-            branches: [
-                { label: 'East Slavic', ipa: '', descendants: [
-                    { label: 'Russian', ipa: '\u0261l\u0250s' },
-                    { label: 'Ukrainian', ipa: '\u0254k\u0254' },
-                ]},
-                { label: 'South Slavic', ipa: '', descendants: [
-                    { label: 'Serbian', ipa: '\u0254k\u0254' },
-                    { label: 'Bulgarian', ipa: '\u0254k\u0254' },
-                ]},
-            ]
-        },
-    ],
-    'Indo-Aryan': [
-        {
-            name: '"nose" (n\u0101k/nak)',
-            root: 'Proto-Indo-Aryan',
-            branches: [
-                { label: 'Central', ipa: '', descendants: [
-                    { label: 'Hindi', ipa: 'na\u02d0k' },
-                    { label: 'Urdu', ipa: 'na\u02d0k' },
-                ]},
-                { label: 'Eastern', ipa: '', descendants: [
-                    { label: 'Bengali', ipa: 'nak' },
-                    { label: 'Assamese', ipa: 'na\u02d0k' },
-                ]},
-                { label: 'Southern', ipa: '', descendants: [
-                    { label: 'Marathi', ipa: 'na\u02d0k' },
-                    { label: 'Sinhala', ipa: 'n\u00e6sa' },
-                ]},
-            ]
-        },
-        {
-            name: '"tooth" (d\u0101nt/dant)',
-            root: 'Proto-Indo-Aryan',
-            branches: [
-                { label: 'Central', ipa: '', descendants: [
-                    { label: 'Hindi', ipa: 'da\u0303\u02d0t' },
-                    { label: 'Punjabi', ipa: 'd\u0259\u0300nd' },
-                ]},
-                { label: 'Eastern', ipa: '', descendants: [
-                    { label: 'Bengali', ipa: 'd\u0251\u0303t' },
-                    { label: 'Odia', ipa: 'danta' },
-                ]},
-            ]
-        },
     ],
     'Sinitic': [
         {
-            name: '"mountain" (sh\u0101n/\u5c71)',
+            name: '"plan" (\u8BA1 kej)',
             root: 'Proto-Sinitic',
             branches: [
                 { label: 'Mandarin group', ipa: '', descendants: [
-                    { label: 'Mandarin', ipa: '\u0282an' },
-                    { label: 'Jin', ipa: 's\u0250\u0303' },
+                    { label: 'Mandarin', ipa: 't\u0255i\u02e5\u02e9' },
+                    { label: 'Jin', ipa: 't\u0255i\u02e6\u02e5' },
                 ]},
                 { label: 'Southern group', ipa: '', descendants: [
-                    { label: 'Cantonese', ipa: 'sa\u02d0n' },
-                    { label: 'Hakka', ipa: 'san' },
-                    { label: 'Hokkien', ipa: 'swa\u0303' },
+                    { label: 'Cantonese', ipa: 'k\u0250i\u032f\u02e7' },
+                    { label: 'Hakka', ipa: 'ki\u02e5' },
+                    { label: 'Hokkien', ipa: 'ke\u02e7\u02e9' },
                 ]},
             ]
         },
         {
-            name: '"person" (r\u00e9n/\u4eba)',
+            name: '"joy" (\u559C xi)',
             root: 'Proto-Sinitic',
             branches: [
                 { label: 'Mandarin group', ipa: '', descendants: [
-                    { label: 'Mandarin', ipa: '\u0290\u0259n' },
-                    { label: 'Jin', ipa: 'z\u0259\u014b' },
+                    { label: 'Mandarin', ipa: '\u0255i\u02e8\u02e9' },
                 ]},
                 { label: 'Southern group', ipa: '', descendants: [
-                    { label: 'Cantonese', ipa: 'j\u0250n' },
-                    { label: 'Hakka', ipa: '\u014bin' },
-                    { label: 'Hokkien', ipa: 'l\u0250\u014b' },
+                    { label: 'Cantonese', ipa: 'hei\u032f\u02e5' },
+                    { label: 'Hakka', ipa: 'hi\u02e8\u02e6' },
+                    { label: 'Hokkien', ipa: 'hi\u02e5\u02e9' },
+                    { label: 'Wu', ipa: '\u0255i\u02e7\u02e6' },
+                    { label: 'Xiang', ipa: '\u0255i\u02e6\u02e9' },
+                ]},
+            ]
+        },
+        {
+            name: '"leak" (\u6F0F luw)',
+            root: 'Proto-Sinitic',
+            branches: [
+                { label: 'Mandarin group', ipa: '', descendants: [
+                    { label: 'Mandarin', ipa: 'lo\u028a\u032f\u02e5\u02e9' },
+                    { label: 'Jin', ipa: 'l\u0259u\u032f\u02e6\u02e5' },
+                ]},
+                { label: 'Southern group', ipa: '', descendants: [
+                    { label: 'Cantonese', ipa: 'l\u0250u\u032f\u02e8' },
+                    { label: 'Hakka', ipa: 'le\u032fo\u02e5' },
+                    { label: 'Hokkien', ipa: 'lau\u032f\u02e7' },
+                    { label: 'Gan', ipa: 'l\u025b\u032fu\u02e9\u02e9' },
                 ]},
             ]
         },
     ],
-    'Turkic': [
+    'Burmish': [
         {
-            name: '"eye" (g\u00f6z/k\u00f6z)',
-            root: 'Proto-Turkic',
+            name: '"road" (gja\u00b2)',
+            root: 'Proto-Burmish',
             branches: [
-                { label: 'Oghuz', ipa: '', descendants: [
-                    { label: 'Turkish', ipa: '\u0261\u00f8z' },
-                    { label: 'Azerbaijani', ipa: '\u0261\u00f8z' },
+                { label: 'Hill Burmish', ipa: '', descendants: [
+                    { label: 'Atsi', ipa: 'kjo\u00b2\u00b9' },
+                    { label: 'Lashi', ipa: 'kj\u0254\u02d0\u00b3\u00b3' },
+                    { label: 'Maru', ipa: 'kj\u0254\u00b3\u2075' },
+                    { label: 'Bola', ipa: 'kja\u00b3\u00b9' },
                 ]},
-                { label: 'Kipchak', ipa: '', descendants: [
-                    { label: 'Kazakh', ipa: 'k\u00f8z' },
-                    { label: 'Uzbek', ipa: 'k\u00f8z' },
+                { label: 'Plains Burmish', ipa: '', descendants: [
+                    { label: 'Achang', ipa: 't\u0255\u0254\u00b3\u00b9' },
+                    { label: 'Rangoon', ipa: 't\u0255\u0251\u2075\u2075' },
                 ]},
             ]
         },
         {
-            name: '"water" (su/suv)',
-            root: 'Proto-Turkic',
+            name: '"road" (lam\u00b9)',
+            root: 'Proto-Burmish',
             branches: [
-                { label: 'Oghuz', ipa: '', descendants: [
-                    { label: 'Turkish', ipa: 'su' },
-                    { label: 'Azerbaijani', ipa: 'su' },
+                { label: 'Hill Burmish', ipa: '', descendants: [
+                    { label: 'Atsi', ipa: 'lam\u2075\u00b9' },
+                    { label: 'Lashi', ipa: 'lam\u00b3\u00b9' },
+                    { label: 'Maru', ipa: 'l\u025b\u0303\u00b3\u00b9' },
+                    { label: 'Bola', ipa: 'l\u025b\u0303\u2075\u2075' },
                 ]},
-                { label: 'Kipchak', ipa: '', descendants: [
-                    { label: 'Kazakh', ipa: 's\u0289' },
-                    { label: 'Kyrgyz', ipa: 'suu' },
+                { label: 'Plains Burmish', ipa: '', descendants: [
+                    { label: 'Achang', ipa: 'lam\u2075\u2075' },
+                    { label: 'Rangoon', ipa: 'l\u0251\u0303\u00b2\u00b2' },
+                ]},
+            ]
+        },
+    ],
+    'Karen': [
+        {
+            name: '"water" (kh\u02b0u)',
+            root: 'Proto-Karen',
+            branches: [
+                { label: 'Northern', ipa: '', descendants: [
+                    { label: 'Kayah', ipa: 'k\u02b0u\u2075\u2075' },
+                    { label: 'Kayaw', ipa: 'k\u02b0u\u00b9\u00b9' },
+                ]},
+                { label: 'Southern', ipa: '', descendants: [
+                    { label: 'Northern Pwo', ipa: 'k\u02b0u\u00b3\u00b3' },
+                    { label: 'Western Bwe', ipa: 'k\u02b0u\u2075\u2075' },
+                ]},
+            ]
+        },
+        {
+            name: '"drink" (j\u0268m)',
+            root: 'Proto-Karen',
+            branches: [
+                { label: 'Northern', ipa: '', descendants: [
+                    { label: 'Kayah', ipa: 'ji\u00b9\u00b9' },
+                    { label: 'Kayan', ipa: '\u025f\u0268\u00b9\u00b9' },
+                    { label: 'Kayaw', ipa: 'j\u0268\u00b9\u00b9' },
+                ]},
+                { label: 'Southern', ipa: '', descendants: [
+                    { label: 'Northern Pao', ipa: 'jum\u2075\u00b3' },
+                    { label: 'Southern Pao', ipa: 'j\u0259m\u2075\u2075' },
+                ]},
+            ]
+        },
+    ],
+    'Aztecan': [
+        {
+            name: '"lip" (n\u0268n\u0268+p\u0268l)',
+            root: 'Proto-Aztecan',
+            branches: [
+                { label: 'Central Nahuatl', ipa: '', descendants: [
+                    { label: 'Classical Nahuatl', ipa: 'nene+pil+li' },
+                    { label: 'North Puebla', ipa: 'nenepil' },
+                    { label: 'Tetelcingo', ipa: 'nenepi\u02d0l' },
+                ]},
+                { label: 'Peripheral', ipa: '', descendants: [
+                    { label: 'Pipil', ipa: 'nenepil' },
+                    { label: 'Pochutec', ipa: 'nenepil' },
+                ]},
+            ]
+        },
+        {
+            name: '"we" (t\u0259ha+m\u0268+t)',
+            root: 'Proto-Aztecan',
+            branches: [
+                { label: 'Central Nahuatl', ipa: '', descendants: [
+                    { label: 'Classical Nahuatl', ipa: 'te\u0294wa\u02d0n' },
+                    { label: 'North Puebla', ipa: 'tehwan' },
+                    { label: 'Tetelcingo', ipa: 'tehwa' },
+                ]},
+                { label: 'Peripheral', ipa: '', descendants: [
+                    { label: 'Pipil', ipa: 'tehemet' },
+                    { label: 'Mecayapan', ipa: 'tehameh' },
+                    { label: 'Pochutec', ipa: 'twen' },
+                ]},
+            ]
+        },
+    ],
+    'Purus': [
+        {
+            name: '"name" (nama)',
+            root: 'Proto-Purus',
+            branches: [
+                { label: 'Northern', ipa: '', descendants: [
+                    { label: 'Apurin\u00e3', ipa: 'nama' },
+                ]},
+                { label: 'Southern', ipa: '', descendants: [
+                    { label: 'Inapari', ipa: 'nam\u00e1ti' },
+                    { label: 'Yine', ipa: 'nama' },
+                ]},
+            ]
+        },
+        {
+            name: '"bone" (kuna)',
+            root: 'Proto-Purus',
+            branches: [
+                { label: 'Northern', ipa: '', descendants: [
+                    { label: 'Apurin\u00e3', ipa: 'konak\u0268' },
+                ]},
+                { label: 'Southern', ipa: '', descendants: [
+                    { label: 'Inapari', ipa: '\u00fana' },
+                    { label: 'Yine', ipa: 'kona' },
                 ]},
             ]
         },
