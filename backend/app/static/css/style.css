@@ -1,18 +1,22 @@
 :root {
-    --bg: #0f1117;
-    --surface: #1a1d27;
-    --surface-hover: #22263a;
-    --border: #2a2e3f;
-    --text: #e4e6eb;
-    --text-muted: #8b8fa3;
-    --primary: #6c63ff;
-    --primary-hover: #5a52d5;
-    --accent: #00d4aa;
-    --accent-dim: rgba(0, 212, 170, 0.15);
-    --warning: #f5a623;
-    --error: #ff4757;
-    --radius: 8px;
-    --font-mono: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace;
+    --bg: #f4efe6;
+    --surface: #faf7f2;
+    --surface-hover: #eee9df;
+    --border: #d4cbbf;
+    --border-light: #e2dbd0;
+    --text: #3b3228;
+    --text-muted: #8a7e6f;
+    --primary: #6b4c2a;
+    --primary-hover: #573d20;
+    --accent: #4a6741;
+    --accent-dim: rgba(74, 103, 65, 0.1);
+    --root-color: #8b5e3c;
+    --inter-color: #5b6e8a;
+    --leaf-color: #4a6741;
+    --error: #9e3030;
+    --radius: 4px;
+    --font-mono: 'Courier New', 'Courier', monospace;
+    --font-serif: 'Georgia', 'Palatino Linotype', 'Times New Roman', serif;
 }
 
 * {
@@ -22,36 +26,36 @@
 }
 
 body {
-    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    font-family: var(--font-serif);
     background: var(--bg);
     color: var(--text);
-    line-height: 1.6;
+    line-height: 1.65;
     min-height: 100vh;
 }
 
 header {
     text-align: center;
-    padding: 32px 20px 16px;
-    border-bottom: 1px solid var(--border);
+    padding: 28px 20px 14px;
+    border-bottom: 2px solid var(--border);
 }
 
 header h1 {
-    font-size: 1.8rem;
+    font-size: 1.6rem;
     font-weight: 700;
-    background: linear-gradient(135deg, var(--primary), var(--accent));
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
+    color: var(--primary);
+    font-family: var(--font-serif);
+    letter-spacing: 0.5px;
 }
 
 .subtitle {
     color: var(--text-muted);
-    font-size: 0.95rem;
-    margin-top: 4px;
+    font-size: 0.9rem;
+    margin-top: 2px;
+    font-style: italic;
 }
 
 main {
-    max-width: 1400px;
+    max-width: 1300px;
     margin: 0 auto;
     padding: 20px;
 }
@@ -73,18 +77,22 @@ main {
     background: var(--surface);
     border: 1px solid var(--border);
     border-radius: var(--radius);
-    padding: 24px;
+    padding: 22px;
 }
 
 .panel h2 {
-    font-size: 1.2rem;
-    margin-bottom: 8px;
+    font-size: 1.15rem;
+    margin-bottom: 6px;
+    font-family: var(--font-serif);
+    color: var(--primary);
+    font-weight: 700;
 }
 
 .help-text {
     color: var(--text-muted);
-    font-size: 0.85rem;
-    margin-bottom: 16px;
+    font-size: 0.82rem;
+    margin-bottom: 14px;
+    font-style: italic;
 }
 
 /* ─── Tree Editor ─── */
@@ -97,7 +105,7 @@ main {
     background: var(--bg);
     border: 1px solid var(--border);
     border-radius: var(--radius);
-    padding: 16px;
+    padding: 14px;
 }
 
 .te-root {
@@ -108,57 +116,59 @@ main {
     display: flex;
     align-items: center;
     gap: 8px;
-    padding: 8px 12px;
+    padding: 7px 10px;
     border-radius: var(--radius);
     margin-bottom: 8px;
     flex-wrap: wrap;
 }
 
 .root-header {
-    background: rgba(245, 166, 35, 0.1);
-    border: 1px solid rgba(245, 166, 35, 0.3);
+    background: rgba(139, 94, 60, 0.08);
+    border: 1px solid rgba(139, 94, 60, 0.25);
 }
 
 .intermediate-header {
-    background: rgba(108, 99, 255, 0.08);
-    border: 1px solid rgba(108, 99, 255, 0.25);
+    background: rgba(91, 110, 138, 0.07);
+    border: 1px solid rgba(91, 110, 138, 0.2);
 }
 
 .te-badge {
     display: inline-block;
-    padding: 2px 8px;
-    border-radius: 12px;
-    font-size: 0.7rem;
-    font-weight: 600;
+    padding: 1px 7px;
+    border-radius: 3px;
+    font-size: 0.65rem;
+    font-weight: 700;
     text-transform: uppercase;
-    letter-spacing: 0.5px;
+    letter-spacing: 0.8px;
     flex-shrink: 0;
+    font-family: -apple-system, sans-serif;
 }
 
 .root-badge {
-    background: rgba(245, 166, 35, 0.2);
-    color: var(--warning);
+    background: rgba(139, 94, 60, 0.15);
+    color: var(--root-color);
 }
 
 .inter-badge {
-    background: rgba(108, 99, 255, 0.2);
-    color: var(--primary);
+    background: rgba(91, 110, 138, 0.12);
+    color: var(--inter-color);
 }
 
 .desc-badge {
-    background: rgba(0, 212, 170, 0.2);
-    color: var(--accent);
+    background: rgba(74, 103, 65, 0.12);
+    color: var(--leaf-color);
 }
 
 .te-label-input {
     flex: 1;
     min-width: 100px;
-    padding: 4px 8px;
+    padding: 4px 7px;
     background: var(--surface);
     border: 1px solid var(--border);
-    border-radius: 4px;
+    border-radius: 3px;
     color: var(--text);
     font-size: 0.85rem;
+    font-family: var(--font-serif);
 }
 
 .te-label-input:focus {
@@ -168,10 +178,10 @@ main {
 
 .te-ipa-input {
     width: 200px;
-    padding: 4px 8px;
+    padding: 4px 7px;
     background: var(--surface);
     border: 1px solid var(--border);
-    border-radius: 4px;
+    border-radius: 3px;
     color: var(--text);
     font-size: 0.9rem;
     font-family: var(--font-mono);
@@ -180,7 +190,7 @@ main {
 .te-ipa-input:focus {
     outline: none;
     border-color: var(--primary);
-    box-shadow: 0 0 0 2px rgba(108, 99, 255, 0.2);
+    box-shadow: 0 0 0 1px rgba(107, 76, 42, 0.15);
 }
 
 .te-reconstructed-tag {
@@ -190,19 +200,19 @@ main {
 }
 
 .te-children {
-    margin-left: 24px;
-    border-left: 2px solid var(--border);
-    padding-left: 16px;
+    margin-left: 20px;
+    border-left: 1px solid var(--border);
+    padding-left: 14px;
 }
 
 .te-intermediate {
-    margin-bottom: 12px;
-    padding-bottom: 8px;
+    margin-bottom: 10px;
+    padding-bottom: 6px;
 }
 
 .te-descendants {
-    margin-left: 24px;
-    border-left: 2px solid rgba(0, 212, 170, 0.2);
+    margin-left: 20px;
+    border-left: 1px solid rgba(74, 103, 65, 0.2);
     padding-left: 12px;
 }
 
@@ -210,11 +220,11 @@ main {
     display: flex;
     align-items: center;
     gap: 6px;
-    padding: 6px 8px;
-    margin-bottom: 4px;
-    background: rgba(0, 212, 170, 0.04);
-    border: 1px solid rgba(0, 212, 170, 0.12);
-    border-radius: 6px;
+    padding: 5px 7px;
+    margin-bottom: 3px;
+    background: rgba(74, 103, 65, 0.04);
+    border: 1px solid rgba(74, 103, 65, 0.1);
+    border-radius: 3px;
 }
 
 .te-descendant .te-label-input {
@@ -227,9 +237,9 @@ main {
 }
 
 .te-descendant .btn-remove {
-    width: 24px;
-    height: 24px;
-    font-size: 0.9rem;
+    width: 22px;
+    height: 22px;
+    font-size: 0.85rem;
 }
 
 /* ─── Buttons ─── */
@@ -241,18 +251,19 @@ main {
 }
 
 .btn {
-    padding: 10px 20px;
+    padding: 8px 18px;
     border: none;
     border-radius: var(--radius);
     cursor: pointer;
-    font-size: 0.9rem;
-    font-weight: 500;
-    transition: all 0.2s;
+    font-size: 0.85rem;
+    font-weight: 600;
+    font-family: -apple-system, sans-serif;
+    transition: all 0.15s;
 }
 
 .btn-primary {
     background: var(--primary);
-    color: white;
+    color: #faf7f2;
 }
 
 .btn-primary:hover {
@@ -271,68 +282,67 @@ main {
 }
 
 .btn-secondary:hover {
-    background: var(--border);
+    background: var(--border-light);
 }
 
 .btn-reconstruct-main {
     flex: 1;
-    font-size: 1rem;
-    padding: 12px 24px;
+    font-size: 0.95rem;
+    padding: 10px 22px;
 }
 
 .btn-add-branch {
     display: block;
     width: 100%;
     margin-top: 8px;
-    padding: 6px 12px;
+    padding: 5px 10px;
     background: transparent;
     border: 1px dashed var(--border);
     color: var(--text-muted);
-    font-size: 0.8rem;
+    font-size: 0.78rem;
     cursor: pointer;
     border-radius: var(--radius);
-    transition: all 0.2s;
+    transition: all 0.15s;
 }
 
 .btn-add-branch:hover {
     border-color: var(--primary);
     color: var(--primary);
-    background: rgba(108, 99, 255, 0.05);
 }
 
 .btn-add-desc {
     display: block;
-    width: calc(100% - 24px);
-    margin-left: 24px;
-    margin-top: 4px;
-    padding: 4px 8px;
+    width: calc(100% - 20px);
+    margin-left: 20px;
+    margin-top: 3px;
+    padding: 3px 7px;
     background: transparent;
-    border: 1px dashed rgba(0, 212, 170, 0.2);
+    border: 1px dashed rgba(74, 103, 65, 0.2);
     color: var(--text-muted);
-    font-size: 0.75rem;
+    font-size: 0.72rem;
     cursor: pointer;
-    border-radius: 4px;
-    transition: all 0.2s;
+    border-radius: 3px;
+    transition: all 0.15s;
 }
 
 .btn-add-desc:hover {
-    border-color: var(--accent);
-    color: var(--accent);
+    border-color: var(--leaf-color);
+    color: var(--leaf-color);
 }
 
 .btn-remove {
     background: none;
     border: 1px solid var(--border);
     color: var(--text-muted);
-    width: 28px;
-    height: 28px;
+    width: 26px;
+    height: 26px;
     border-radius: var(--radius);
     cursor: pointer;
-    font-size: 1rem;
+    font-size: 0.95rem;
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: all 0.2s;
+    transition: all 0.15s;
     flex-shrink: 0;
 }
 
@@ -350,47 +360,51 @@ main {
 }
 
 .proto-form {
-    font-size: 2rem;
+    font-size: 1.8rem;
     font-family: var(--font-mono);
     text-align: center;
-    padding: 20px;
-    color: var(--accent);
-    background: var(--accent-dim);
+    padding: 16px;
+    color: var(--primary);
+    background: rgba(107, 76, 42, 0.06);
+    border: 1px solid rgba(107, 76, 42, 0.15);
     border-radius: var(--radius);
-    margin-bottom: 20px;
-    letter-spacing: 2px;
+    margin-bottom: 18px;
+    letter-spacing: 1px;
 }
 
 .reconstructed-indicator {
     display: inline-block;
-    margin-left: 12px;
-    font-size: 0.7rem;
+    margin-left: 10px;
+    font-size: 0.65rem;
     color: var(--text-muted);
     background: var(--surface-hover);
-    padding: 2px 8px;
-    border-radius: 10px;
+    padding: 1px 7px;
+    border-radius: 3px;
     vertical-align: middle;
     letter-spacing: 0;
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    font-family: -apple-system, sans-serif;
+    font-style: italic;
 }
 
 .result-section {
-    margin-bottom: 20px;
+    margin-bottom: 18px;
 }
 
 .result-section h3 {
     font-size: 0.85rem;
     color: var(--text-muted);
-    margin-bottom: 10px;
+    margin-bottom: 8px;
     text-transform: uppercase;
-    letter-spacing: 1px;
-    font-weight: 600;
+    letter-spacing: 1.2px;
+    font-weight: 700;
+    font-family: -apple-system, sans-serif;
 }
 
 /* ─── Tree Visualization ─── */
 
 #tree-container {
     background: var(--bg);
+    border: 1px solid var(--border-light);
     border-radius: var(--radius);
     padding: 10px;
     min-height: 300px;
@@ -403,38 +417,38 @@ main {
 }
 
 .tree-node.root circle {
-    fill: var(--warning);
-    stroke: var(--warning);
+    fill: var(--root-color);
+    stroke: var(--root-color);
     stroke-width: 2;
 }
 
 .tree-node.intermediate circle {
-    fill: var(--primary);
-    stroke: var(--primary);
+    fill: var(--inter-color);
+    stroke: var(--inter-color);
     stroke-width: 2;
 }
 
 .tree-node.descendant circle {
-    fill: var(--accent);
-    stroke: var(--accent);
+    fill: var(--leaf-color);
+    stroke: var(--leaf-color);
     stroke-width: 2;
 }
 
 .tree-node circle {
-    fill: var(--primary);
-    stroke: var(--accent);
+    fill: var(--inter-color);
+    stroke: var(--inter-color);
     stroke-width: 2;
 }
 
 .node-label {
     fill: var(--text);
-    font-size: 12px;
+    font-size: 11px;
     font-family: var(--font-mono);
 }
 
 .node-reconstructed-tag {
     fill: var(--text-muted);
-    font-size: 10px;
+    font-size: 9px;
     font-style: italic;
 }
 
@@ -450,34 +464,36 @@ main {
     width: 100%;
     border-collapse: collapse;
     font-family: var(--font-mono);
-    font-size: 0.8rem;
+    font-size: 0.78rem;
 }
 
 .sim-matrix th {
-    padding: 6px 8px;
+    padding: 5px 7px;
     color: var(--text-muted);
-    font-size: 0.7rem;
-    font-weight: 600;
+    font-size: 0.68rem;
+    font-weight: 700;
     text-align: center;
     border-bottom: 1px solid var(--border);
     white-space: nowrap;
+    font-family: -apple-system, sans-serif;
 }
 
 .sim-matrix .sim-row-label {
     text-align: right;
-    padding-right: 10px;
+    padding-right: 8px;
     color: var(--text-muted);
-    font-size: 0.75rem;
-    font-weight: 600;
+    font-size: 0.72rem;
+    font-weight: 700;
     white-space: nowrap;
+    font-family: -apple-system, sans-serif;
 }
 
 .sim-cell {
     text-align: center;
-    padding: 6px 8px;
-    border: 1px solid var(--border);
-    font-size: 0.75rem;
-    min-width: 55px;
+    padding: 5px 7px;
+    border: 1px solid var(--border-light);
+    font-size: 0.72rem;
+    min-width: 52px;
 }
 
 /* ─── Ages Table ─── */
@@ -490,60 +506,62 @@ main {
 
 .ages-table th {
     text-align: left;
-    padding: 6px 10px;
+    padding: 5px 8px;
     color: var(--text-muted);
-    font-weight: 600;
-    font-size: 0.7rem;
+    font-weight: 700;
+    font-size: 0.68rem;
     text-transform: uppercase;
     letter-spacing: 0.5px;
     border-bottom: 1px solid var(--border);
+    font-family: -apple-system, sans-serif;
 }
 
 .ages-table td {
-    padding: 6px 10px;
-    border-bottom: 1px solid var(--border);
+    padding: 5px 8px;
+    border-bottom: 1px solid var(--border-light);
 }
 
 .mono-cell {
     font-family: var(--font-mono);
-    font-size: 0.8rem;
+    font-size: 0.78rem;
 }
 
 .age-bar-bg {
     width: 100%;
-    height: 14px;
+    height: 12px;
     background: var(--bg);
-    border-radius: 3px;
+    border: 1px solid var(--border-light);
+    border-radius: 2px;
     overflow: hidden;
 }
 
 .age-bar {
     height: 100%;
-    background: linear-gradient(90deg, var(--accent), var(--primary));
-    border-radius: 3px;
+    background: linear-gradient(90deg, var(--leaf-color), var(--root-color));
+    border-radius: 2px;
     transition: width 0.6s ease;
 }
 
 /* ─── Tree age tag ─── */
 
 .node-age-tag {
-    fill: var(--warning);
-    font-size: 10px;
+    fill: var(--root-color);
+    font-size: 9px;
     font-family: var(--font-mono);
-    opacity: 0.8;
+    opacity: 0.75;
 }
 
 /* ─── Misc ─── */
 
 .loading {
     display: inline-block;
-    width: 20px;
-    height: 20px;
+    width: 16px;
+    height: 16px;
     border: 2px solid var(--border);
     border-top-color: var(--primary);
     border-radius: 50%;
     animation: spin 0.8s linear infinite;
-    margin-right: 8px;
+    margin-right: 6px;
     vertical-align: middle;
 }
 
@@ -552,19 +570,20 @@ main {
 }
 
 .error-message {
-    background: rgba(255, 71, 87, 0.1);
-    border: 1px solid rgba(255, 71, 87, 0.3);
+    background: rgba(158, 48, 48, 0.06);
+    border: 1px solid rgba(158, 48, 48, 0.2);
     color: var(--error);
-    padding: 12px 16px;
+    padding: 10px 14px;
     border-radius: var(--radius);
-    font-size: 0.9rem;
+    font-size: 0.85rem;
 }
 
 footer {
     text-align: center;
-    padding: 20px;
+    padding: 16px;
     color: var(--text-muted);
-    font-size: 0.8rem;
+    font-size: 0.78rem;
+    font-style: italic;
     border-top: 1px solid var(--border);
-    margin-top: 40px;
+    margin-top: 30px;
 }

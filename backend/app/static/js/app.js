@@ -315,12 +315,12 @@ function displaySimilarityMatrix(matrix) {
 }
 
 function simColor(value, isDiagonal) {
-    if (isDiagonal) return 'rgba(108, 99, 255, 0.15)';
-    // Green for high similarity, red for low
-    const r = Math.round(255 * (1 - value));
-    const g = Math.round(200 * value);
-    const b = Math.round(100 * value);
-    return `rgba(${r}, ${g}, ${b}, 0.25)`;
+    if (isDiagonal) return 'rgba(107, 76, 42, 0.08)';
+    // Warm brown for low similarity, muted green for high
+    const r = Math.round(160 - 86 * value);
+    const g = Math.round(80 + 43 * value);
+    const b = Math.round(48 + 17 * value);
+    return `rgba(${r}, ${g}, ${b}, ${0.1 + value * 0.15})`;
 }
 
 // ─── Relative Ages Table ───
