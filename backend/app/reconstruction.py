@@ -274,40 +274,94 @@ def reconstruct_tree(tree):
     if "error" in result_tree:
         return result_tree
 
-    # Collect all pairwise distances between leaves
+    # Build similarity matrix from leaves
     leaves = _collect_leaves(result_tree)
-    distances = []
-    for i, l1 in enumerate(leaves):
-        for j, l2 in enumerate(leaves):
-            if i < j:
-                try:
-                    fed = feature_edit_distance(l1["ipa"], l2["ipa"])
-                    ned = normalized_edit_distance(l1["ipa"], l2["ipa"])
-                    divergence = estimate_from_ned(ned)
-                    distances.append({
-                        "lang1": l1["label"],
-                        "lang2": l2["label"],
-                        "word1": l1["ipa"],
-                        "word2": l2["ipa"],
-                        "feature_edit_distance": round(fed, 4),
-                        "normalized_edit_distance": round(ned, 4),
-                        "divergence": divergence,
-                    })
-                except Exception:
-                    distances.append({
-                        "lang1": l1["label"],
-                        "lang2": l2["label"],
-                        "word1": l1["ipa"],
-                        "word2": l2["ipa"],
-                        "feature_edit_distance": None,
-                        "normalized_edit_distance": None,
-                        "divergence": None,
-                    })
+    labels = [l["label"] for l in leaves]
+    ipas = [l["ipa"] for l in leaves]
+    matrix = _build_similarity_matrix(labels, ipas)
+
+    # Compute RCI-based relative ages for all internal nodes
+    _compute_relative_ages(result_tree)
 
     return {
         "tree": result_tree,
-        "distances": distances,
+        "similarity_matrix": matrix,
     }
+
+
+def _build_similarity_matrix(labels, ipas):
+    """Build an NxN IPA similarity matrix between all leaf forms."""
+    n = len(labels)
+    rows = []
+    for i in range(n):
+        row = []
+        for j in range(n):
+            if i == j:
+                row.append(1.0)
+            else:
+                try:
+                    ned = normalized_edit_distance(ipas[i], ipas[j])
+                    row.append(round(1.0 - ned, 4))
+                except Exception:
+                    row.append(None)
+        rows.append(row)
+    return {"labels": labels, "values": rows}
+
+
+def _compute_relative_ages(node):
+    """Compute relative ages for all nodes using Rate of Change Index.
+
+    For each internal node, the age is the average NED between its IPA
+    and all leaf descendants under it. Leaf nodes have age 0.
+    The root's age is normalized to 1.0 and all others are scaled relative to it.
+    """
+    # First pass: compute raw ages (avg NED to descendant leaves)
+    _assign_raw_age(node)
+
+    # Normalize: root age = 1.0, scale everything else
+    root_age = node.get("_raw_age", 1.0)
+    if root_age == 0:
+        root_age = 1.0
+    _normalize_ages(node, root_age)
+
+
+def _assign_raw_age(node):
+    """Recursively assign raw age = avg NED to all descendant leaves."""
+    if not node.get("children"):
+        node["_raw_age"] = 0.0
+        return
+
+    for child in node["children"]:
+        _assign_raw_age(child)
+
+    # Collect all leaf IPAs under this node
+    leaves = _collect_leaves(node)
+    node_ipa = node.get("ipa", "")
+    if not node_ipa or not leaves:
+        node["_raw_age"] = 0.0
+        return
+
+    total_ned = 0.0
+    count = 0
+    for leaf in leaves:
+        try:
+            ned = normalized_edit_distance(node_ipa, leaf["ipa"])
+            total_ned += ned
+            count += 1
+        except Exception:
+            pass
+
+    node["_raw_age"] = (total_ned / count) if count > 0 else 0.0
+
+
+def _normalize_ages(node, root_age):
+    """Normalize raw ages so root=1.0, and store as 'relative_age'."""
+    raw = node.get("_raw_age", 0.0)
+    node["relative_age"] = round(raw / root_age, 4) if root_age > 0 else 0.0
+    del node["_raw_age"]
+
+    for child in node.get("children", []):
+        _normalize_ages(child, root_age)
 
 
 def _reconstruct_node(node):

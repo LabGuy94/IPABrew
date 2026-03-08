@@ -63,7 +63,6 @@ function addIntermediate(label = '', ipa = '', descendants = []) {
 }
 
 function bindEditorEvents() {
-    // Remove descendant buttons
     document.querySelectorAll('.te-descendant .btn-remove').forEach(btn => {
         btn.onclick = () => {
             const branch = btn.closest('.te-intermediate');
@@ -74,7 +73,6 @@ function bindEditorEvents() {
         };
     });
 
-    // Remove branch buttons
     document.querySelectorAll('.btn-remove-branch').forEach(btn => {
         btn.onclick = () => {
             const branches = document.querySelectorAll('.te-intermediate');
@@ -84,7 +82,6 @@ function bindEditorEvents() {
         };
     });
 
-    // Add descendant buttons
     document.querySelectorAll('.btn-add-desc').forEach(btn => {
         btn.onclick = () => {
             const descContainer = btn.previousElementSibling;
@@ -94,7 +91,6 @@ function bindEditorEvents() {
     });
 }
 
-// Initialize with 2 branches, 2 descendants each
 function initTree() {
     const container = document.getElementById('intermediates-container');
     container.innerHTML = '';
@@ -125,13 +121,13 @@ document.getElementById('btn-load-demo').addEventListener('click', () => {
             root: 'Proto-Romance',
             branches: [
                 { label: 'Western', ipa: '', descendants: [
-                    { label: 'French', ipa: 'pɛːr' },
+                    { label: 'French', ipa: 'p\u025b\u02d0r' },
                     { label: 'Spanish', ipa: 'padre' },
                     { label: 'Portuguese', ipa: 'paj' },
                 ]},
                 { label: 'Eastern', ipa: '', descendants: [
                     { label: 'Italian', ipa: 'padre' },
-                    { label: 'Romanian', ipa: 'tatə' },
+                    { label: 'Romanian', ipa: 'tat\u0259' },
                 ]},
             ]
         },
@@ -139,13 +135,13 @@ document.getElementById('btn-load-demo').addEventListener('click', () => {
             root: 'Proto-Romance',
             branches: [
                 { label: 'Western', ipa: '', descendants: [
-                    { label: 'French', ipa: 'mɛːr' },
+                    { label: 'French', ipa: 'm\u025b\u02d0r' },
                     { label: 'Spanish', ipa: 'madre' },
-                    { label: 'Portuguese', ipa: 'mɐ̃j' },
+                    { label: 'Portuguese', ipa: 'm\u0250\u0303j' },
                 ]},
                 { label: 'Eastern', ipa: '', descendants: [
                     { label: 'Italian', ipa: 'madre' },
-                    { label: 'Romanian', ipa: 'mamə' },
+                    { label: 'Romanian', ipa: 'mam\u0259' },
                 ]},
             ]
         },
@@ -154,12 +150,12 @@ document.getElementById('btn-load-demo').addEventListener('click', () => {
             branches: [
                 { label: 'Western', ipa: '', descendants: [
                     { label: 'French', ipa: 'o' },
-                    { label: 'Spanish', ipa: 'aɣwa' },
-                    { label: 'Portuguese', ipa: 'aɡwɐ' },
+                    { label: 'Spanish', ipa: 'a\u0263wa' },
+                    { label: 'Portuguese', ipa: 'a\u0261w\u0250' },
                 ]},
                 { label: 'Eastern', ipa: '', descendants: [
                     { label: 'Italian', ipa: 'akwa' },
-                    { label: 'Romanian', ipa: 'apɨ' },
+                    { label: 'Romanian', ipa: 'ap\u0268' },
                 ]},
             ]
         },
@@ -167,12 +163,12 @@ document.getElementById('btn-load-demo').addEventListener('click', () => {
             root: 'Proto-Romance',
             branches: [
                 { label: 'Italo-Western', ipa: '', descendants: [
-                    { label: 'French', ipa: 'nɥi' },
-                    { label: 'Spanish', ipa: 'notʃe' },
-                    { label: 'Italian', ipa: 'nɔtte' },
+                    { label: 'French', ipa: 'n\u0265i' },
+                    { label: 'Spanish', ipa: 'not\u0283e' },
+                    { label: 'Italian', ipa: 'n\u0254tte' },
                 ]},
                 { label: 'Ibero-Romance', ipa: '', descendants: [
-                    { label: 'Portuguese', ipa: 'nojtʃi' },
+                    { label: 'Portuguese', ipa: 'nojt\u0283i' },
                 ]},
             ]
         },
@@ -224,7 +220,6 @@ function buildTreeFromEditor() {
 document.getElementById('btn-reconstruct').addEventListener('click', async () => {
     const tree = buildTreeFromEditor();
 
-    // Validate: every descendant must have ipa
     for (const branch of tree.children) {
         for (const desc of branch.children) {
             if (!desc.ipa) {
@@ -260,7 +255,8 @@ function displayResults(result) {
     if (result.error) {
         document.getElementById('proto-form-display').textContent = '';
         document.getElementById('tree-container').innerHTML = `<div class="error-message">${result.error}</div>`;
-        document.getElementById('distances-display').innerHTML = '';
+        document.getElementById('similarity-matrix').innerHTML = '';
+        document.getElementById('ages-display').innerHTML = '';
         return;
     }
 
@@ -276,40 +272,80 @@ function displayResults(result) {
         protoDisplay.appendChild(tag);
     }
 
-    // Draw tree
+    // Draw tree with ages
     drawTree(tree);
 
-    // Show distances
-    if (result.distances) displayDistances(result.distances);
+    // Show similarity matrix
+    if (result.similarity_matrix) displaySimilarityMatrix(result.similarity_matrix);
+
+    // Show relative ages
+    displayAges(tree);
 }
 
-function displayDistances(distances) {
-    const container = document.getElementById('distances-display');
-    if (!distances || distances.length === 0) {
-        container.innerHTML = '<p class="help-text">No pairwise distances available.</p>';
+// ─── Similarity Matrix ───
+
+function displaySimilarityMatrix(matrix) {
+    const container = document.getElementById('similarity-matrix');
+    const { labels, values } = matrix;
+    const n = labels.length;
+
+    if (n < 2) {
+        container.innerHTML = '<p class="help-text">Need at least 2 leaves for a matrix.</p>';
         return;
     }
 
-    let html = `<table class="distances-table">
-        <thead><tr>
-            <th>Languages</th>
-            <th>Words</th>
-            <th>Distance</th>
-            <th>Est. Years</th>
-            <th>Category</th>
-        </tr></thead><tbody>`;
+    let html = '<table class="sim-matrix"><thead><tr><th></th>';
+    labels.forEach(l => { html += `<th>${l}</th>`; });
+    html += '</tr></thead><tbody>';
 
-    distances.forEach(d => {
-        const cat = d.divergence ? d.divergence.category : '\u2014';
-        const years = d.divergence ? `~${d.divergence.estimated_years.toLocaleString()}` : '\u2014';
-        const ned = d.normalized_edit_distance !== null ? d.normalized_edit_distance.toFixed(3) : '\u2014';
-        const badgeClass = getCategoryClass(cat);
+    for (let i = 0; i < n; i++) {
+        html += `<tr><td class="sim-row-label">${labels[i]}</td>`;
+        for (let j = 0; j < n; j++) {
+            const val = values[i][j];
+            const display = val !== null ? val.toFixed(3) : '\u2014';
+            const intensity = val !== null ? val : 0;
+            const bg = simColor(intensity, i === j);
+            html += `<td class="sim-cell" style="background:${bg}">${display}</td>`;
+        }
+        html += '</tr>';
+    }
+
+    html += '</tbody></table>';
+    container.innerHTML = html;
+}
+
+function simColor(value, isDiagonal) {
+    if (isDiagonal) return 'rgba(108, 99, 255, 0.15)';
+    // Green for high similarity, red for low
+    const r = Math.round(255 * (1 - value));
+    const g = Math.round(200 * value);
+    const b = Math.round(100 * value);
+    return `rgba(${r}, ${g}, ${b}, 0.25)`;
+}
+
+// ─── Relative Ages Table ───
+
+function displayAges(tree) {
+    const container = document.getElementById('ages-display');
+    const nodes = [];
+    collectInternalNodes(tree, nodes);
+
+    if (nodes.length === 0) {
+        container.innerHTML = '<p class="help-text">No internal nodes to display.</p>';
+        return;
+    }
+
+    let html = '<table class="ages-table"><thead><tr><th>Node</th><th>IPA</th><th>Relative Age</th><th>Depth</th></tr></thead><tbody>';
+
+    nodes.forEach(n => {
+        const age = n.relative_age;
+        const barWidth = Math.round(age * 100);
+        const star = n.reconstructed ? '*' : '';
         html += `<tr>
-            <td>${d.lang1} \u2014 ${d.lang2}</td>
-            <td class="mono-cell">${d.word1} / ${d.word2}</td>
-            <td class="mono-cell">${ned}</td>
-            <td class="mono-cell">${years}</td>
-            <td><span class="category-badge ${badgeClass}">${cat}</span></td>
+            <td>${n.label}</td>
+            <td class="mono-cell">${star}${n.ipa}</td>
+            <td class="mono-cell">${age.toFixed(4)}</td>
+            <td><div class="age-bar-bg"><div class="age-bar" style="width:${barWidth}%"></div></div></td>
         </tr>`;
     });
 
@@ -317,12 +353,11 @@ function displayDistances(distances) {
     container.innerHTML = html;
 }
 
-function getCategoryClass(category) {
-    if (category.includes('Dialect')) return 'dialects';
-    if (category.includes('Romance')) return 'romance';
-    if (category.includes('Germanic')) return 'germanic';
-    if (category.includes('IE')) return 'ie';
-    return 'deep';
+function collectInternalNodes(node, result) {
+    if (node.children && node.children.length > 0) {
+        result.push(node);
+        node.children.forEach(c => collectInternalNodes(c, result));
+    }
 }
 
 // ─── D3 Tree Visualization ───
@@ -331,13 +366,12 @@ function drawTree(treeData) {
     const container = document.getElementById('tree-container');
     container.innerHTML = '';
 
-    // Convert to d3 hierarchy format
     const root = d3.hierarchy(treeData, d => d.children);
     const nodeCount = root.descendants().length;
 
     const width = Math.max(600, container.clientWidth || 600);
-    const height = Math.max(350, nodeCount * 50);
-    const margin = { top: 30, right: 200, bottom: 30, left: 50 };
+    const height = Math.max(350, nodeCount * 55);
+    const margin = { top: 30, right: 220, bottom: 30, left: 50 };
 
     const svg = d3.select('#tree-container')
         .append('svg')
@@ -396,14 +430,14 @@ function drawTree(treeData) {
             return `${label}: ${star}${ipa}`;
         });
 
-    // Reconstructed indicator
-    nodes.filter(d => d.data.reconstructed)
+    // Age label for internal nodes
+    nodes.filter(d => d.data.relative_age !== undefined && d.data.relative_age > 0)
         .append('text')
-        .attr('dy', '1.8em')
+        .attr('dy', '1.6em')
         .attr('x', d => d.children ? -14 : 14)
         .attr('text-anchor', d => d.children ? 'end' : 'start')
-        .attr('class', 'node-reconstructed-tag')
-        .text('(reconstructed)');
+        .attr('class', 'node-age-tag')
+        .text(d => `age: ${d.data.relative_age.toFixed(2)}`);
 }
 
 // ─── Init ───

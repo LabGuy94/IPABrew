@@ -444,27 +444,64 @@ main {
     stroke-width: 1.5;
 }
 
-/* ─── Distance Table ─── */
+/* ─── Similarity Matrix ─── */
 
-.distances-table {
+.sim-matrix {
+    width: 100%;
+    border-collapse: collapse;
+    font-family: var(--font-mono);
+    font-size: 0.8rem;
+}
+
+.sim-matrix th {
+    padding: 6px 8px;
+    color: var(--text-muted);
+    font-size: 0.7rem;
+    font-weight: 600;
+    text-align: center;
+    border-bottom: 1px solid var(--border);
+    white-space: nowrap;
+}
+
+.sim-matrix .sim-row-label {
+    text-align: right;
+    padding-right: 10px;
+    color: var(--text-muted);
+    font-size: 0.75rem;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.sim-cell {
+    text-align: center;
+    padding: 6px 8px;
+    border: 1px solid var(--border);
+    font-size: 0.75rem;
+    min-width: 55px;
+}
+
+/* ─── Ages Table ─── */
+
+.ages-table {
     width: 100%;
     border-collapse: collapse;
     font-size: 0.8rem;
 }
 
-.distances-table th,
-.distances-table td {
-    padding: 8px 10px;
-    border-bottom: 1px solid var(--border);
+.ages-table th {
     text-align: left;
+    padding: 6px 10px;
+    color: var(--text-muted);
+    font-weight: 600;
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    border-bottom: 1px solid var(--border);
 }
 
-.distances-table th {
-    color: var(--text-muted);
-    font-weight: 500;
-    text-transform: uppercase;
-    font-size: 0.7rem;
-    letter-spacing: 0.5px;
+.ages-table td {
+    padding: 6px 10px;
+    border-bottom: 1px solid var(--border);
 }
 
 .mono-cell {
@@ -472,19 +509,29 @@ main {
     font-size: 0.8rem;
 }
 
-.category-badge {
-    display: inline-block;
-    padding: 2px 8px;
-    border-radius: 12px;
-    font-size: 0.7rem;
-    font-weight: 500;
+.age-bar-bg {
+    width: 100%;
+    height: 14px;
+    background: var(--bg);
+    border-radius: 3px;
+    overflow: hidden;
 }
 
-.category-badge.dialects { background: rgba(0, 212, 170, 0.2); color: var(--accent); }
-.category-badge.romance { background: rgba(108, 99, 255, 0.2); color: var(--primary); }
-.category-badge.germanic { background: rgba(245, 166, 35, 0.2); color: var(--warning); }
-.category-badge.ie { background: rgba(255, 71, 87, 0.2); color: var(--error); }
-.category-badge.deep { background: rgba(139, 143, 163, 0.2); color: var(--text-muted); }
+.age-bar {
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent), var(--primary));
+    border-radius: 3px;
+    transition: width 0.6s ease;
+}
+
+/* ─── Tree age tag ─── */
+
+.node-age-tag {
+    fill: var(--warning);
+    font-size: 10px;
+    font-family: var(--font-mono);
+    opacity: 0.8;
+}
 
 /* ─── Misc ─── */
 
