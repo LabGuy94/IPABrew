@@ -335,16 +335,19 @@ function displayAges(tree) {
         return;
     }
 
-    let html = '<table class="ages-table"><thead><tr><th>Node</th><th>IPA</th><th>Relative Age</th><th>Depth</th></tr></thead><tbody>';
+    // Find max age for bar scaling
+    const maxAge = Math.max(...nodes.map(n => n.estimated_age_years || 0), 1);
+
+    let html = '<table class="ages-table"><thead><tr><th>Node</th><th>IPA</th><th>Est. Age</th><th>Depth</th></tr></thead><tbody>';
 
     nodes.forEach(n => {
-        const age = n.relative_age;
-        const barWidth = Math.round(age * 100);
+        const years = n.estimated_age_years || 0;
+        const barWidth = Math.round((years / maxAge) * 100);
         const star = n.reconstructed ? '*' : '';
         html += `<tr>
             <td>${n.label}</td>
             <td class="mono-cell">${star}${n.ipa}</td>
-            <td class="mono-cell">${age.toFixed(4)}</td>
+            <td class="mono-cell">~${years.toLocaleString()} yrs</td>
             <td><div class="age-bar-bg"><div class="age-bar" style="width:${barWidth}%"></div></div></td>
         </tr>`;
     });
@@ -431,13 +434,13 @@ function drawTree(treeData) {
         });
 
     // Age label for internal nodes
-    nodes.filter(d => d.data.relative_age !== undefined && d.data.relative_age > 0)
+    nodes.filter(d => d.data.estimated_age_years !== undefined && d.data.estimated_age_years > 0)
         .append('text')
         .attr('dy', '1.6em')
         .attr('x', d => d.children ? -14 : 14)
         .attr('text-anchor', d => d.children ? 'end' : 'start')
         .attr('class', 'node-age-tag')
-        .text(d => `age: ${d.data.relative_age.toFixed(2)}`);
+        .text(d => `~${d.data.estimated_age_years.toLocaleString()} yrs`);
 }
 
 // ─── Init ───

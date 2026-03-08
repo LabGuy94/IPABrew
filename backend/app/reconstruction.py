@@ -280,8 +280,8 @@ def reconstruct_tree(tree):
     ipas = [l["ipa"] for l in leaves]
     matrix = _build_similarity_matrix(labels, ipas)
 
-    # Compute RCI-based relative ages for all internal nodes
-    _compute_relative_ages(result_tree)
+    # Compute RCI-based age estimates in years for all internal nodes
+    _compute_ages_in_years(result_tree)
 
     return {
         "tree": result_tree,
@@ -308,37 +308,48 @@ def _build_similarity_matrix(labels, ipas):
     return {"labels": labels, "values": rows}
 
 
-def _compute_relative_ages(node):
-    """Compute relative ages for all nodes using Rate of Change Index.
+def _compute_ages_in_years(node):
+    """Compute estimated age in years for all nodes using Rate of Change Index.
 
-    For each internal node, the age is the average NED between its IPA
-    and all leaf descendants under it. Leaf nodes have age 0.
-    The root's age is normalized to 1.0 and all others are scaled relative to it.
+    For each internal node, compute the average NED between its IPA and all
+    descendant leaves. Map that NED to an estimated year value via
+    glottochronological estimation. Leaves get age 0 (present day).
     """
-    # First pass: compute raw ages (avg NED to descendant leaves)
-    _assign_raw_age(node)
-
-    # Normalize: root age = 1.0, scale everything else
-    root_age = node.get("_raw_age", 1.0)
-    if root_age == 0:
-        root_age = 1.0
-    _normalize_ages(node, root_age)
+    _assign_age_years(node)
 
 
-def _assign_raw_age(node):
-    """Recursively assign raw age = avg NED to all descendant leaves."""
+def _ned_to_years(ned):
+    """Convert a normalized edit distance to an estimated age in years.
+
+    Uses a continuous logarithmic model calibrated to known language family
+    divergence points. The formula is derived from the Swadesh retention rate
+    model: years = -ln(1 - ned) / (2 * ln(r)) * 1000, with r = 0.86.
+    Clamped to avoid domain errors at extremes.
+    """
+    import math
+    if ned <= 0:
+        return 0
+    if ned >= 1.0:
+        ned = 0.99
+    similarity = 1.0 - ned
+    if similarity <= 0:
+        similarity = 0.01
+    return (math.log(similarity) / (2 * math.log(0.86))) * 1000
+
+
+def _assign_age_years(node):
+    """Recursively assign estimated age in years to each node."""
     if not node.get("children"):
-        node["_raw_age"] = 0.0
+        node["estimated_age_years"] = 0
         return
 
     for child in node["children"]:
-        _assign_raw_age(child)
+        _assign_age_years(child)
 
-    # Collect all leaf IPAs under this node
     leaves = _collect_leaves(node)
     node_ipa = node.get("ipa", "")
     if not node_ipa or not leaves:
-        node["_raw_age"] = 0.0
+        node["estimated_age_years"] = 0
         return
 
     total_ned = 0.0
@@ -351,17 +362,8 @@ def _assign_raw_age(node):
         except Exception:
             pass
 
-    node["_raw_age"] = (total_ned / count) if count > 0 else 0.0
-
-
-def _normalize_ages(node, root_age):
-    """Normalize raw ages so root=1.0, and store as 'relative_age'."""
-    raw = node.get("_raw_age", 0.0)
-    node["relative_age"] = round(raw / root_age, 4) if root_age > 0 else 0.0
-    del node["_raw_age"]
-
-    for child in node.get("children", []):
-        _normalize_ages(child, root_age)
+    avg_ned = (total_ned / count) if count > 0 else 0.0
+    node["estimated_age_years"] = round(_ned_to_years(avg_ned))
 
 
 def _reconstruct_node(node):
