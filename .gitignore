@@ -22,3 +22,12 @@ Thumbs.db
 .vscode/
 *.swp
 *.swo
+
+# Emacs
+\#*#
+*~
+
+# Untracked data repos (reference/training data, not needed at runtime)
+model/data/dpd_repo/
+model/data/sigtyp/
+model/data/lexibank/
