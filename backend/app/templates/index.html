@@ -48,6 +48,7 @@
                         <div id="demo-menu" class="demo-menu" style="display:none;"></div>
                     </div>
                     <button id="btn-clear" class="btn btn-secondary">Clear</button>
+                    <button id="btn-ipa-keyboard" class="btn btn-secondary" title="Toggle IPA Keyboard">⌨ IPA</button>
                 </div>
             </div>
 
@@ -83,6 +84,26 @@
             </div>
         </div>
     </main>
+
+    <!-- IPA Keyboard -->
+    <div id="ipa-keyboard" class="ipa-keyboard"  style="display:none;">
+        <div class="ipa-kb-header">
+            <div class="ipa-kb-tabs">
+                <button class="ipa-kb-tab active" data-tab="consonants">Consonants</button>
+                <button class="ipa-kb-tab" data-tab="vowels">Vowels</button>
+                <button class="ipa-kb-tab" data-tab="diacritics">Diacritics</button>
+                <button class="ipa-kb-tab" data-tab="tones">Tones</button>
+                <button class="ipa-kb-tab" data-tab="suprasegmentals">Other</button>
+            </div>
+            <div class="ipa-kb-controls">
+                <label class="ipa-kb-expand-label">
+                    <input type="checkbox" id="ipa-kb-show-all"> All symbols
+                </label>
+                <button id="ipa-kb-close" class="ipa-kb-close" title="Close">&times;</button>
+            </div>
+        </div>
+        <div class="ipa-kb-body" id="ipa-kb-body"></div>
+    </div>
 
 
     <script src="/static/js/app.js"></script>

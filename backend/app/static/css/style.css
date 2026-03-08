@@ -733,3 +733,196 @@ footer {
     background: var(--surface-hover);
     color: var(--primary);
 }
+
+/* ── IPA Keyboard ── */
+
+.ipa-keyboard {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 200;
+    background: var(--surface);
+    border-top: 2px solid var(--border);
+    box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.1);
+    transform: translateY(100%);
+    transition: transform 0.3s ease;
+}
+
+.ipa-keyboard.open {
+    transform: translateY(0);
+}
+
+.ipa-kb-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 6px 16px;
+    border-bottom: 1px solid var(--border-light);
+    gap: 12px;
+}
+
+.ipa-kb-tabs {
+    display: flex;
+    gap: 2px;
+}
+
+.ipa-kb-tab {
+    padding: 4px 12px;
+    border: none;
+    background: none;
+    color: var(--text-muted);
+    font-size: 0.75rem;
+    font-weight: 600;
+    font-family: -apple-system, sans-serif;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    cursor: pointer;
+    border-radius: 3px;
+    transition: all 0.15s;
+}
+
+.ipa-kb-tab:hover {
+    color: var(--text);
+    background: var(--surface-hover);
+}
+
+.ipa-kb-tab.active {
+    color: var(--primary);
+    background: rgba(107, 76, 42, 0.1);
+}
+
+.ipa-kb-controls {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.ipa-kb-expand-label {
+    font-size: 0.72rem;
+    color: var(--text-muted);
+    font-family: -apple-system, sans-serif;
+    cursor: pointer;
+    user-select: none;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.ipa-kb-expand-label input {
+    cursor: pointer;
+}
+
+.ipa-kb-close {
+    width: 28px;
+    height: 28px;
+    border: 1px solid var(--border);
+    background: none;
+    color: var(--text-muted);
+    border-radius: var(--radius);
+    cursor: pointer;
+    font-size: 1.1rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.15s;
+}
+
+.ipa-kb-close:hover {
+    background: var(--error);
+    border-color: var(--error);
+    color: white;
+}
+
+.ipa-kb-body {
+    padding: 10px 16px 14px;
+    max-height: 180px;
+    overflow-y: auto;
+}
+
+.ipa-kb-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+}
+
+.ipa-kb-key {
+    min-width: 34px;
+    height: 34px;
+    padding: 2px 6px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--text);
+    font-size: 1rem;
+    font-family: var(--font-mono);
+    cursor: pointer;
+    border-radius: 3px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.1s;
+}
+
+.ipa-kb-key:hover {
+    background: var(--primary);
+    color: #faf7f2;
+    border-color: var(--primary);
+}
+
+.ipa-kb-key:active {
+    transform: scale(0.92);
+}
+
+.ipa-kb-key[title] {
+    position: relative;
+}
+
+.ipa-kb-section-label {
+    width: 100%;
+    font-size: 0.65rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    color: var(--text-muted);
+    font-family: -apple-system, sans-serif;
+    margin-top: 8px;
+    margin-bottom: 2px;
+}
+
+.ipa-kb-section-label:first-child {
+    margin-top: 0;
+}
+
+/* Per-field IPA keyboard button */
+.ipa-field-toggle {
+    width: 24px;
+    height: 24px;
+    padding: 0;
+    border: 1px solid var(--border);
+    background: none;
+    color: var(--text-muted);
+    font-size: 0.7rem;
+    cursor: pointer;
+    border-radius: 3px;
+    flex-shrink: 0;
+    transition: all 0.15s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.ipa-field-toggle:hover {
+    border-color: var(--primary);
+    color: var(--primary);
+}
+
+.ipa-field-toggle.active {
+    background: var(--primary);
+    border-color: var(--primary);
+    color: #faf7f2;
+}
+
+/* Push main content up when keyboard is open */
+body.ipa-kb-open main {
+    padding-bottom: 230px;
+}

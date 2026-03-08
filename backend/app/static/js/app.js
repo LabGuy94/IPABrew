@@ -21,6 +21,7 @@ function createDescendantHTML(lang = '', ipa = '') {
             <span class="te-badge desc-badge">Leaf</span>
             <input type="text" class="te-label-input te-desc-label" value="${lang}" placeholder="Language name">
             <input type="text" class="te-ipa-input te-desc-ipa" value="${ipa}" placeholder="IPA (required)">
+            <button type="button" class="ipa-field-toggle" title="IPA Keyboard">⌨</button>
             <button class="btn-remove" title="Remove descendant">&times;</button>
         </div>
     `;
@@ -47,6 +48,7 @@ function createIntermediateHTML(label = '', ipa = '', descendants = []) {
                 <span class="te-badge inter-badge">Branch</span>
                 <input type="text" class="te-label-input te-inter-label" value="${descLabel}" placeholder="Branch label">
                 <input type="text" class="te-ipa-input te-inter-ipa" value="${ipa}" placeholder="IPA (optional, leave empty to reconstruct)">
+                <button type="button" class="ipa-field-toggle" title="IPA Keyboard">⌨</button>
                 <button class="btn-remove btn-remove-branch" title="Remove branch">&times;</button>
             </div>
             <div class="te-descendants">
@@ -707,3 +709,325 @@ function drawTree(treeData) {
 
 // ─── Init ───
 initTree();
+
+// ─── IPA Keyboard ───
+
+const IPA_SYMBOLS = {
+    consonants: {
+        common: [
+            { label: 'Plosives', symbols: [
+                ['p', 'voiceless bilabial plosive'], ['b', 'voiced bilabial plosive'],
+                ['t', 'voiceless alveolar plosive'], ['d', 'voiced alveolar plosive'],
+                ['\u0288', 'voiceless retroflex plosive'], ['\u0256', 'voiced retroflex plosive'],
+                ['c', 'voiceless palatal plosive'], ['\u025F', 'voiced palatal plosive'],
+                ['k', 'voiceless velar plosive'], ['\u0261', 'voiced velar plosive'],
+                ['q', 'voiceless uvular plosive'], ['\u0262', 'voiced uvular plosive'],
+                ['\u0294', 'glottal stop'],
+            ]},
+            { label: 'Nasals', symbols: [
+                ['m', 'bilabial nasal'], ['\u0271', 'labiodental nasal'],
+                ['n', 'alveolar nasal'], ['\u0273', 'retroflex nasal'],
+                ['\u0272', 'palatal nasal'], ['\u014B', 'velar nasal'],
+                ['\u0274', 'uvular nasal'],
+            ]},
+            { label: 'Fricatives', symbols: [
+                ['\u0278', 'voiceless bilabial fricative'], ['\u03B2', 'voiced bilabial fricative'],
+                ['f', 'voiceless labiodental fricative'], ['v', 'voiced labiodental fricative'],
+                ['\u03B8', 'voiceless dental fricative'], ['\u00F0', 'voiced dental fricative'],
+                ['s', 'voiceless alveolar fricative'], ['z', 'voiced alveolar fricative'],
+                ['\u0283', 'voiceless postalveolar fricative'], ['\u0292', 'voiced postalveolar fricative'],
+                ['\u0282', 'voiceless retroflex fricative'], ['\u0290', 'voiced retroflex fricative'],
+                ['\u00E7', 'voiceless palatal fricative'], ['\u029D', 'voiced palatal fricative'],
+                ['x', 'voiceless velar fricative'], ['\u0263', 'voiced velar fricative'],
+                ['\u03C7', 'voiceless uvular fricative'], ['\u0281', 'voiced uvular fricative'],
+                ['h', 'voiceless glottal fricative'], ['\u0266', 'voiced glottal fricative'],
+            ]},
+            { label: 'Approximants', symbols: [
+                ['\u028B', 'labiodental approximant'],
+                ['\u0279', 'alveolar approximant'],
+                ['j', 'palatal approximant'], ['w', 'labial-velar approximant'],
+                ['\u0270', 'velar approximant'],
+            ]},
+            { label: 'Laterals & Rhotics', symbols: [
+                ['l', 'alveolar lateral'], ['\u026D', 'retroflex lateral'],
+                ['\u028E', 'palatal lateral'], ['\u029F', 'velar lateral'],
+                ['r', 'alveolar trill'], ['\u0280', 'uvular trill'],
+                ['\u027E', 'alveolar tap'], ['\u027D', 'retroflex flap'],
+            ]},
+        ],
+        extended: [
+            { label: 'Implosives', symbols: [
+                ['\u0253', 'bilabial implosive'], ['\u0257', 'alveolar implosive'],
+                ['\u0284', 'palatal implosive'], ['\u0260', 'velar implosive'],
+                ['\u029B', 'uvular implosive'],
+            ]},
+            { label: 'Clicks', symbols: [
+                ['\u0298', 'bilabial click'], ['\u01C0', 'dental click'],
+                ['\u01C3', 'postalveolar click'], ['\u01C1', 'lateral click'],
+                ['\u01C2', 'palatoalveolar click'],
+            ]},
+            { label: 'Co-articulated', symbols: [
+                ['\u0265', 'labial-palatal approximant'],
+                ['\u029C', 'voiceless epiglottal fricative'],
+                ['\u02A1', 'epiglottal plosive'], ['\u02A2', 'voiced epiglottal fricative'],
+            ]},
+        ],
+    },
+    vowels: {
+        common: [
+            { label: 'Close', symbols: [
+                ['i', 'close front unrounded'], ['y', 'close front rounded'],
+                ['\u0268', 'close central unrounded'], ['\u0289', 'close central rounded'],
+                ['\u026F', 'close back unrounded'], ['u', 'close back rounded'],
+            ]},
+            { label: 'Near-close', symbols: [
+                ['\u026A', 'near-close front unrounded'], ['\u028F', 'near-close front rounded'],
+                ['\u028A', 'near-close back rounded'],
+            ]},
+            { label: 'Close-mid', symbols: [
+                ['e', 'close-mid front unrounded'], ['\u00F8', 'close-mid front rounded'],
+                ['\u0258', 'close-mid central unrounded'], ['\u0275', 'close-mid central rounded'],
+                ['\u0264', 'close-mid back unrounded'], ['o', 'close-mid back rounded'],
+            ]},
+            { label: 'Mid', symbols: [
+                ['\u0259', 'mid central (schwa)'],
+            ]},
+            { label: 'Open-mid', symbols: [
+                ['\u025B', 'open-mid front unrounded'], ['\u0153', 'open-mid front rounded'],
+                ['\u025C', 'open-mid central unrounded'], ['\u025E', 'open-mid central rounded'],
+                ['\u028C', 'open-mid back unrounded'], ['\u0254', 'open-mid back rounded'],
+            ]},
+            { label: 'Near-open', symbols: [
+                ['\u00E6', 'near-open front unrounded'],
+                ['\u0250', 'near-open central'],
+            ]},
+            { label: 'Open', symbols: [
+                ['a', 'open front unrounded'], ['\u0276', 'open front rounded'],
+                ['\u0251', 'open back unrounded'], ['\u0252', 'open back rounded'],
+            ]},
+        ],
+        extended: [
+            { label: 'Nasalized vowels', symbols: [
+                ['\u00E3', 'nasalized a'], ['\u1EBD', 'nasalized e'],
+                ['\u0129', 'nasalized i'], ['\u00F5', 'nasalized o'],
+                ['\u0169', 'nasalized u'],
+            ]},
+        ],
+    },
+    diacritics: {
+        common: [
+            { label: 'Length', symbols: [
+                ['\u02D0', 'long'], ['\u02D1', 'half-long'],
+            ]},
+            { label: 'Nasalization & Voicing', symbols: [
+                ['\u0303', 'nasalized (combining)'], ['\u0325', 'voiceless (combining)'],
+                ['\u032C', 'voiced (combining)'],
+            ]},
+            { label: 'Aspiration & Release', symbols: [
+                ['\u02B0', 'aspirated'], ['\u02BC', 'ejective'],
+                ['\u031A', 'no audible release'],
+            ]},
+            { label: 'Syllabicity', symbols: [
+                ['\u0329', 'syllabic (combining)'], ['\u032F', 'non-syllabic (combining)'],
+            ]},
+            { label: 'Place modifiers', symbols: [
+                ['\u02B7', 'labialized'], ['\u02B2', 'palatalized'],
+                ['\u02E0', 'velarized'], ['\u02E4', 'pharyngealized'],
+                ['\u0334', 'velarized/pharyngealized (combining)'],
+            ]},
+        ],
+        extended: [
+            { label: 'Tongue root', symbols: [
+                ['\u0318', 'ATR (combining)'], ['\u0319', 'RTR (combining)'],
+            ]},
+            { label: 'Other modifiers', symbols: [
+                ['\u031F', 'advanced (combining)'], ['\u0320', 'retracted (combining)'],
+                ['\u0308', 'centralized (combining)'], ['\u033D', 'mid-centralized (combining)'],
+                ['\u031D', 'raised (combining)'], ['\u031E', 'lowered (combining)'],
+                ['\u032A', 'dental (combining)'], ['\u033A', 'apical (combining)'],
+                ['\u033B', 'laminal (combining)'], ['\u0339', 'more rounded (combining)'],
+                ['\u031C', 'less rounded (combining)'],
+                ['\u0324', 'breathy voiced (combining)'], ['\u0330', 'creaky voiced (combining)'],
+            ]},
+        ],
+    },
+    tones: {
+        common: [
+            { label: 'Tone letters', symbols: [
+                ['\u02E5', 'extra high'], ['\u02E6', 'high'], ['\u02E7', 'mid'],
+                ['\u02E8', 'low'], ['\u02E9', 'extra low'],
+            ]},
+            { label: 'Contour examples', symbols: [
+                ['\u02E7\u02E5', 'rising'], ['\u02E5\u02E9', 'falling'],
+                ['\u02E9\u02E7', 'low rising'], ['\u02E7\u02E9', 'mid falling'],
+            ]},
+            { label: 'Diacritic tones', symbols: [
+                ['\u0301', 'high tone (combining)'], ['\u0300', 'low tone (combining)'],
+                ['\u0302', 'falling tone (combining)'], ['\u030C', 'rising tone (combining)'],
+                ['\u0304', 'mid tone (combining)'],
+            ]},
+        ],
+        extended: [
+            { label: 'Numbered tones', symbols: [
+                ['\u00B9', 'superscript 1'], ['\u00B2', 'superscript 2'],
+                ['\u00B3', 'superscript 3'], ['\u2074', 'superscript 4'],
+                ['\u2075', 'superscript 5'],
+            ]},
+        ],
+    },
+    suprasegmentals: {
+        common: [
+            { label: 'Stress & Breaks', symbols: [
+                ['\u02C8', 'primary stress'], ['\u02CC', 'secondary stress'],
+                ['.', 'syllable break'], ['|', 'minor break'],
+                ['\u2016', 'major break'],
+            ]},
+            { label: 'Linking', symbols: [
+                ['\u203F', 'linking (tie bar)'],
+                ['\u0361', 'tie bar above (combining)'],
+            ]},
+        ],
+        extended: [
+            { label: 'Intonation', symbols: [
+                ['\u2197', 'global rise'], ['\u2198', 'global fall'],
+                ['\u2193', 'downstep'], ['\u2191', 'upstep'],
+            ]},
+        ],
+    },
+};
+
+let ipaActiveInput = null;
+
+function openIPAKeyboard(targetInput) {
+    ipaActiveInput = targetInput;
+    const kb = document.getElementById('ipa-keyboard');
+    kb.style.display = 'block';
+    // Force reflow before adding class so transition fires
+    kb.offsetHeight;
+    kb.classList.add('open');
+    document.body.classList.add('ipa-kb-open');
+    renderIPATab();
+    updateFieldToggleStates();
+    targetInput.focus();
+}
+
+function closeIPAKeyboard() {
+    const kb = document.getElementById('ipa-keyboard');
+    kb.classList.remove('open');
+    document.body.classList.remove('ipa-kb-open');
+    kb.addEventListener('transitionend', () => {
+        if (!kb.classList.contains('open')) kb.style.display = 'none';
+    }, { once: true });
+    ipaActiveInput = null;
+    updateFieldToggleStates();
+}
+
+function toggleIPAKeyboard(targetInput) {
+    const kb = document.getElementById('ipa-keyboard');
+    if (kb.classList.contains('open')) {
+        if (targetInput && targetInput !== ipaActiveInput) {
+            // Switch target, keep open
+            ipaActiveInput = targetInput;
+            updateFieldToggleStates();
+            targetInput.focus();
+        } else {
+            closeIPAKeyboard();
+        }
+    } else {
+        openIPAKeyboard(targetInput || document.querySelector('.te-ipa-input'));
+    }
+}
+
+function updateFieldToggleStates() {
+    document.querySelectorAll('.ipa-field-toggle').forEach(btn => {
+        const ipaInput = btn.previousElementSibling;
+        btn.classList.toggle('active', ipaInput === ipaActiveInput);
+    });
+    const globalBtn = document.getElementById('btn-ipa-keyboard');
+    globalBtn.classList.toggle('active',
+        document.getElementById('ipa-keyboard').classList.contains('open'));
+}
+
+function getActiveTab() {
+    const active = document.querySelector('.ipa-kb-tab.active');
+    return active ? active.dataset.tab : 'consonants';
+}
+
+function renderIPATab() {
+    const tab = getActiveTab();
+    const showAll = document.getElementById('ipa-kb-show-all').checked;
+    const data = IPA_SYMBOLS[tab];
+    if (!data) return;
+
+    const body = document.getElementById('ipa-kb-body');
+    let html = '<div class="ipa-kb-grid">';
+
+    const sections = showAll ? [...data.common, ...(data.extended || [])] : data.common;
+
+    for (const section of sections) {
+        html += `<div class="ipa-kb-section-label">${section.label}</div>`;
+        for (const [sym, desc] of section.symbols) {
+            html += `<button type="button" class="ipa-kb-key" data-char="${sym}" title="${desc}">${sym}</button>`;
+        }
+    }
+
+    html += '</div>';
+    body.innerHTML = html;
+}
+
+function insertAtCursor(input, text) {
+    const start = input.selectionStart;
+    const end = input.selectionEnd;
+    const before = input.value.substring(0, start);
+    const after = input.value.substring(end);
+    input.value = before + text + after;
+    const pos = start + text.length;
+    input.setSelectionRange(pos, pos);
+    input.focus();
+}
+
+// Tab switching
+document.querySelector('.ipa-kb-tabs').addEventListener('click', (e) => {
+    const tab = e.target.closest('.ipa-kb-tab');
+    if (!tab) return;
+    document.querySelectorAll('.ipa-kb-tab').forEach(t => t.classList.remove('active'));
+    tab.classList.add('active');
+    renderIPATab();
+});
+
+// Key clicks — insert character
+document.getElementById('ipa-kb-body').addEventListener('click', (e) => {
+    const key = e.target.closest('.ipa-kb-key');
+    if (!key || !ipaActiveInput) return;
+    insertAtCursor(ipaActiveInput, key.dataset.char);
+});
+
+// Show all toggle
+document.getElementById('ipa-kb-show-all').addEventListener('change', renderIPATab);
+
+// Close button
+document.getElementById('ipa-kb-close').addEventListener('click', closeIPAKeyboard);
+
+// Global toggle button
+document.getElementById('btn-ipa-keyboard').addEventListener('click', () => {
+    toggleIPAKeyboard();
+});
+
+// Per-field toggle buttons (delegated from tree editor)
+document.querySelector('.tree-editor').addEventListener('click', (e) => {
+    const toggle = e.target.closest('.ipa-field-toggle');
+    if (!toggle) return;
+    const ipaInput = toggle.previousElementSibling;
+    if (ipaInput && ipaInput.classList.contains('te-ipa-input')) {
+        toggleIPAKeyboard(ipaInput);
+    }
+});
+
+// Track focus on IPA inputs to update active target
+document.querySelector('.tree-editor').addEventListener('focusin', (e) => {
+    if (e.target.classList.contains('te-ipa-input') &&
+        document.getElementById('ipa-keyboard').classList.contains('open')) {
+        ipaActiveInput = e.target;
+        updateFieldToggleStates();
+    }
+});
