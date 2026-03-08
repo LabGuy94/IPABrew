@@ -14,6 +14,10 @@ def create_app():
     )
     CORS(app)
 
+    # Load DPD neural model (ML reconstruction)
+    from app.services import dpd_service
+    dpd_service.init()
+
     from app.routes import api
 
     app.register_blueprint(api, url_prefix="/api")

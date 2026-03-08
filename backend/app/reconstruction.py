@@ -7,6 +7,7 @@ from lingpy import Multiple
 
 from app.ipa_utils import feature_edit_distance, normalized_edit_distance
 from app.glottochronology import estimate_from_ned
+from app.services import dpd_service
 
 logging.basicConfig(level=logging.WARNING)
 logger = logging.getLogger(__name__)
@@ -245,7 +246,7 @@ def _build_convergence_tree(words, labels, proto_form, aligned):
     return tree
 
 
-def reconstruct_tree(tree):
+def reconstruct_tree(tree, method="ml"):
     """Reconstruct a tree bottom-up.
 
     Tree format:
@@ -270,7 +271,10 @@ def reconstruct_tree(tree):
     if not tree or "children" not in tree or len(tree.get("children", [])) < 1:
         return {"error": "Tree must have at least one intermediate child"}
 
-    result_tree = _reconstruct_node(tree)
+    if method == "ml" and dpd_service.is_available():
+        result_tree = _reconstruct_node_ml(tree)
+    else:
+        result_tree = _reconstruct_node(tree)
     if "error" in result_tree:
         return result_tree
 
@@ -364,6 +368,68 @@ def _assign_age_years(node):
 
     avg_ned = (total_ned / count) if count > 0 else 0.0
     node["estimated_age_years"] = round(_ned_to_years(avg_ned))
+
+
+def _reconstruct_node_ml(node):
+    """Recursively reconstruct a node bottom-up using the DPD neural model."""
+    children = node.get("children")
+
+    # Leaf node
+    if not children:
+        ipa = (node.get("ipa") or "").strip()
+        if not ipa:
+            return {"error": f"Descendant '{node.get('label', '?')}' is missing IPA input"}
+        return {
+            "label": node.get("label", ""),
+            "ipa": ipa,
+            "type": "descendant",
+            "reconstructed": False,
+        }
+
+    # Process children first (bottom-up)
+    resolved_children = []
+    for child in children:
+        resolved = _reconstruct_node_ml(child)
+        if "error" in resolved:
+            return resolved
+        resolved_children.append(resolved)
+
+    label = node.get("label", "")
+    ipa = (node.get("ipa") or "").strip()
+
+    if not ipa:
+        # Collect IPA from immediate children to build cognate dict
+        cognates = {}
+        for child in resolved_children:
+            child_ipa = child.get("ipa", "").strip()
+            child_label = child.get("label", "")
+            if child_ipa and child_label:
+                cognates[child_label] = child_ipa
+
+        if len(cognates) < 2:
+            if len(cognates) == 1:
+                ipa = list(cognates.values())[0]
+            else:
+                return {"error": f"Node '{label}' has no IPA input and no descendants to reconstruct from"}
+        else:
+            try:
+                ipa = dpd_service.predict_proto(cognates)
+            except Exception as e:
+                return {"error": f"ML reconstruction failed for '{label}': {str(e)}"}
+        reconstructed = True
+    else:
+        reconstructed = False
+
+    is_root = node.get("_is_root", False)
+    node_type = "root" if is_root else "intermediate"
+
+    return {
+        "label": label,
+        "ipa": ipa,
+        "type": node_type,
+        "reconstructed": reconstructed,
+        "children": resolved_children,
+    }
 
 
 def _reconstruct_node(node):

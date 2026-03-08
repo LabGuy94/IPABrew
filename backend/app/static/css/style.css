@@ -587,3 +587,53 @@ footer {
     border-top: 1px solid var(--border);
     margin-top: 30px;
 }
+
+/* ── Method Selector ── */
+
+.method-selector {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 14px;
+    font-size: 0.85rem;
+}
+
+.method-selector label {
+    color: var(--text-muted);
+    font-weight: 600;
+    font-family: -apple-system, sans-serif;
+    font-size: 0.78rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.method-selector select {
+    padding: 4px 8px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    color: var(--text);
+    font-size: 0.82rem;
+    font-family: var(--font-serif);
+    cursor: pointer;
+}
+
+.method-selector select:focus {
+    outline: none;
+    border-color: var(--primary);
+}
+
+.method-badge {
+    display: inline-block;
+    margin-left: 10px;
+    padding: 1px 8px;
+    border-radius: 3px;
+    font-size: 0.6rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    vertical-align: middle;
+    font-family: -apple-system, sans-serif;
+    background: rgba(74, 103, 65, 0.12);
+    color: var(--accent);
+}

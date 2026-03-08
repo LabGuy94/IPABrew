@@ -12,6 +12,7 @@ async function apiPost(endpoint, body) {
 // ─── Tree Editor State ───
 
 let branchCounter = 0;
+let lastTreePayload = null;
 
 function createDescendantHTML(lang = '', ipa = '') {
     const id = `desc-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
@@ -111,6 +112,7 @@ document.getElementById('btn-add-intermediate').addEventListener('click', () => 
 
 document.getElementById('btn-clear').addEventListener('click', () => {
     initTree();
+    lastTreePayload = null;
     document.getElementById('root-label').value = 'Proto-Language';
     document.getElementById('results-panel').style.display = 'none';
 });
@@ -234,11 +236,31 @@ document.getElementById('btn-reconstruct').addEventListener('click', async () =>
     btn.innerHTML = '<span class="loading"></span>Reconstructing...';
 
     try {
-        const result = await apiPost('/reconstruct_tree', { tree });
+        const method = document.getElementById('method-select').value;
+        lastTreePayload = tree;
+        const result = await apiPost('/reconstruct_tree', { tree, method });
         displayResults(result);
     } catch (e) {
         const panel = document.getElementById('results-panel');
         panel.style.display = 'block';
+        panel.innerHTML = `<div class="error-message">Error: ${e.message}</div>`;
+    } finally {
+        btn.disabled = false;
+        btn.textContent = 'Reconstruct';
+    }
+});
+
+document.getElementById('method-select').addEventListener('change', async () => {
+    if (!lastTreePayload || document.getElementById('results-panel').style.display === 'none') return;
+    const method = document.getElementById('method-select').value;
+    const btn = document.getElementById('btn-reconstruct');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="loading"></span>Reconstructing...';
+    try {
+        const result = await apiPost('/reconstruct_tree', { tree: lastTreePayload, method });
+        displayResults(result);
+    } catch (e) {
+        const panel = document.getElementById('results-panel');
         panel.innerHTML = `<div class="error-message">Error: ${e.message}</div>`;
     } finally {
         btn.disabled = false;
@@ -270,6 +292,13 @@ function displayResults(result) {
         tag.className = 'reconstructed-indicator';
         tag.textContent = 'reconstructed';
         protoDisplay.appendChild(tag);
+    }
+    const methodSelect = document.getElementById('method-select');
+    if (methodSelect) {
+        const badge = document.createElement('span');
+        badge.className = 'method-badge';
+        badge.textContent = methodSelect.value === 'ml' ? 'ML' : 'Algorithm';
+        protoDisplay.appendChild(badge);
     }
 
     // Draw tree with ages

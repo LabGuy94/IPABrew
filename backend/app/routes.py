@@ -9,6 +9,7 @@ from app.reconstruction import (
     reconstruct_tree,
 )
 from app.ipa_utils import ipa_distance_report, get_features
+from app.services import dpd_service
 from app.glottochronology import (
     estimate_divergence_years,
     estimate_from_ned,
@@ -68,9 +69,15 @@ def reconstruct_tree_route():
 
     tree = data["tree"]
     tree["_is_root"] = True
-    result = reconstruct_tree(tree)
+    method = data.get("method", "ml")
+    result = reconstruct_tree(tree, method=method)
     return jsonify(result)
 
+
+
+@api.route("/model/status", methods=["GET"])
+def model_status():
+    return jsonify({"available": dpd_service.is_available()})
 
 @api.route("/align", methods=["POST"])
 def align():

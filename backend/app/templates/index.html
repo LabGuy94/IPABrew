@@ -3,14 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Proto-Language Reconstructor</title>
+    <title>IPABrew</title>
     <link rel="stylesheet" href="/static/css/style.css">
     <script src="https://d3js.org/d3.v7.min.js"></script>
 </head>
 <body>
     <header>
-        <h1>Proto-Language Reconstructor</h1>
-        <p class="subtitle">Define a language tree, input IPA for descendants, and reconstruct ancestral forms</p>
+        <h1>IPABrew</h1>
+        <p class="subtitle">Define a language tree, input IPA for descendants, and reconstruct ancestral forms using neural ML or traditional algorithms</p>
     </header>
 
     <main>
@@ -52,6 +52,14 @@
             <div class="panel results-panel" id="results-panel" style="display: none;">
                 <h2>Results</h2>
 
+                <div class="method-selector">
+                    <label for="method-select">Method:</label>
+                    <select id="method-select">
+                        <option value="ml" selected>Machine Learning (DPD)</option>
+                        <option value="algorithm">Algorithm (LingPy)</option>
+                    </select>
+                </div>
+
                 <div id="proto-form-display" class="proto-form"></div>
 
                 <div class="result-section">
@@ -74,7 +82,7 @@
     </main>
 
     <footer>
-        <p>Built with LingPy, PanPhon &amp; D3.js</p>
+        <p>IPABrew &mdash; Built with DPD, LingPy, PanPhon &amp; D3.js</p>
     </footer>
 
     <script src="/static/js/app.js"></script>
