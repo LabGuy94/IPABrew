@@ -7,7 +7,7 @@ IPABrew is a web application for reconstructing proto-language forms from cognat
 **Prerequisites:** Python 3.11+ (3.12 recommended), pip
 
 ```bash
-git clone <repo-url> && cd IPABrew
+git clone https://github.com/LabGuy94/IPABrew.git && cd IPABrew
 pip install -r requirements.txt
 cd backend && python run.py
 ```
