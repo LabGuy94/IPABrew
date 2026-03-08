@@ -1,23 +1,24 @@
+# Web framework
 flask>=3.0,<4.0
 flask-cors>=5.0,<6.0
 gunicorn>=23.0,<24.0
+
+# Linguistics
 lingpy>=2.6,<3.0
 lingrex>=1.4,<2.0
 panphon>=0.22,<1.0
+
+# Data
 pandas>=2.0,<4.0
+
+# ML model (DPD neural reconstruction)
 torch>=2.0
-pytorch-lightning>=2.0,<2.1
-editdistance
+pytorch-lightning>=2.0,<3.0
 einops
-sacrebleu
 tabulate
-toml
-torchmetrics>=0.11,<0.12
+torchmetrics>=0.11,<1.0
 scikit-learn
 scipy
-newick
-python-dotenv
-unicodecsv
 regex
-torchshow
 transformers
+torchshow
