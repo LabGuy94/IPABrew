@@ -115,6 +115,7 @@ document.getElementById('btn-clear').addEventListener('click', () => {
     lastTreePayload = null;
     document.getElementById('root-label').value = 'Proto-Language';
     document.getElementById('results-panel').style.display = 'none';
+    document.querySelector('.app-layout').classList.remove('has-results');
 });
 
 // ─── Demo Data ───
@@ -465,7 +466,10 @@ document.getElementById('btn-reconstruct').addEventListener('click', async () =>
         displayResults(result);
     } catch (e) {
         const panel = document.getElementById('results-panel');
+        const layout = document.querySelector('.app-layout');
         panel.style.display = 'block';
+        panel.offsetHeight;
+        layout.classList.add('has-results');
         panel.innerHTML = `<div class="error-message">Error: ${e.message}</div>`;
     } finally {
         btn.disabled = false;
@@ -474,7 +478,7 @@ document.getElementById('btn-reconstruct').addEventListener('click', async () =>
 });
 
 document.getElementById('method-select').addEventListener('change', async () => {
-    if (!lastTreePayload || document.getElementById('results-panel').style.display === 'none') return;
+    if (!lastTreePayload || !document.querySelector('.app-layout').classList.contains('has-results')) return;
     const method = document.getElementById('method-select').value;
     const btn = document.getElementById('btn-reconstruct');
     btn.disabled = true;
@@ -495,8 +499,13 @@ document.getElementById('method-select').addEventListener('change', async () => 
 
 function displayResults(result) {
     const panel = document.getElementById('results-panel');
-    panel.style.display = 'block';
-    document.querySelector('.app-layout').classList.add('has-results');
+    const layout = document.querySelector('.app-layout');
+    if (!layout.classList.contains('has-results')) {
+        panel.style.display = 'block';
+        // Force layout calc so the browser sees the pre-transition state
+        panel.offsetHeight;
+        layout.classList.add('has-results');
+    }
 
     if (result.error) {
         document.getElementById('proto-form-display').textContent = '';

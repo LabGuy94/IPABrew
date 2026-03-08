@@ -67,7 +67,6 @@ main {
     align-items: start;
     max-width: 650px;
     margin: 0 auto;
-    transition: max-width 0.5s ease, grid-template-columns 0.5s ease;
 }
 
 .app-layout.has-results {
@@ -75,10 +74,31 @@ main {
     max-width: none;
 }
 
+.tree-editor-panel {
+    transition: all 0.45s ease;
+}
+
+.results-panel {
+    opacity: 0;
+    transform: translateX(30px);
+    transition: opacity 0.4s ease 0.15s, transform 0.4s ease 0.15s;
+}
+
+.app-layout.has-results .results-panel {
+    opacity: 1;
+    transform: translateX(0);
+}
+
 @media (max-width: 1000px) {
     .app-layout, .app-layout.has-results {
         grid-template-columns: 1fr;
         max-width: none;
+    }
+    .results-panel {
+        transform: translateY(20px);
+    }
+    .app-layout.has-results .results-panel {
+        transform: translateY(0);
     }
 }
 
