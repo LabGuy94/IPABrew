@@ -637,3 +637,65 @@ footer {
     background: rgba(74, 103, 65, 0.12);
     color: var(--accent);
 }
+
+
+/* ── Demo Picker ── */
+
+.demo-picker-wrap {
+    position: relative;
+}
+
+.demo-menu {
+    position: absolute;
+    bottom: calc(100% + 6px);
+    left: 0;
+    min-width: 260px;
+    max-height: 360px;
+    overflow-y: auto;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+    z-index: 100;
+    padding: 6px 0;
+}
+
+.demo-group {
+    padding: 0 4px;
+}
+
+.demo-group + .demo-group {
+    border-top: 1px solid var(--border-light);
+    margin-top: 4px;
+    padding-top: 4px;
+}
+
+.demo-group-label {
+    padding: 4px 10px 2px;
+    font-size: 0.65rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    color: var(--text-muted);
+    font-family: -apple-system, sans-serif;
+}
+
+.demo-item {
+    display: block;
+    width: 100%;
+    text-align: left;
+    padding: 5px 10px;
+    background: none;
+    border: none;
+    font-size: 0.82rem;
+    font-family: var(--font-serif);
+    color: var(--text);
+    cursor: pointer;
+    border-radius: 3px;
+    transition: background 0.1s;
+}
+
+.demo-item:hover {
+    background: var(--surface-hover);
+    color: var(--primary);
+}

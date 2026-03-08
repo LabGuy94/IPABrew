@@ -117,9 +117,12 @@ document.getElementById('btn-clear').addEventListener('click', () => {
     document.getElementById('results-panel').style.display = 'none';
 });
 
-document.getElementById('btn-load-demo').addEventListener('click', () => {
-    const demos = [
+// ─── Demo Data ───
+
+const DEMOS = {
+    'Romance': [
         {
+            name: '"father" (padre/p\u00e8re)',
             root: 'Proto-Romance',
             branches: [
                 { label: 'Western', ipa: '', descendants: [
@@ -134,6 +137,7 @@ document.getElementById('btn-load-demo').addEventListener('click', () => {
             ]
         },
         {
+            name: '"mother" (madre/m\u00e8re)',
             root: 'Proto-Romance',
             branches: [
                 { label: 'Western', ipa: '', descendants: [
@@ -148,6 +152,7 @@ document.getElementById('btn-load-demo').addEventListener('click', () => {
             ]
         },
         {
+            name: '"water" (aqua/eau)',
             root: 'Proto-Romance',
             branches: [
                 { label: 'Western', ipa: '', descendants: [
@@ -162,6 +167,7 @@ document.getElementById('btn-load-demo').addEventListener('click', () => {
             ]
         },
         {
+            name: '"night" (nox/nuit)',
             root: 'Proto-Romance',
             branches: [
                 { label: 'Italo-Western', ipa: '', descendants: [
@@ -174,9 +180,183 @@ document.getElementById('btn-load-demo').addEventListener('click', () => {
                 ]},
             ]
         },
-    ];
-    const demo = demos[Math.floor(Math.random() * demos.length)];
+    ],
+    'Germanic': [
+        {
+            name: '"water" (Wasser/water)',
+            root: 'Proto-Germanic',
+            branches: [
+                { label: 'West Germanic', ipa: '', descendants: [
+                    { label: 'English', ipa: 'w\u0254\u02d0t\u0259\u0279' },
+                    { label: 'German', ipa: 'vas\u0259\u0281' },
+                    { label: 'Dutch', ipa: 'v\u0251\u02d0t\u0259r' },
+                ]},
+                { label: 'North Germanic', ipa: '', descendants: [
+                    { label: 'Swedish', ipa: 'vat\u0259n' },
+                    { label: 'Icelandic', ipa: 'va\u02d0tn' },
+                ]},
+            ]
+        },
+        {
+            name: '"house" (Haus/hus)',
+            root: 'Proto-Germanic',
+            branches: [
+                { label: 'West Germanic', ipa: '', descendants: [
+                    { label: 'English', ipa: 'ha\u028as' },
+                    { label: 'German', ipa: 'ha\u028as' },
+                    { label: 'Dutch', ipa: 'h\u0259\u028as' },
+                ]},
+                { label: 'North Germanic', ipa: '', descendants: [
+                    { label: 'Swedish', ipa: 'h\u0289\u02d0s' },
+                    { label: 'Icelandic', ipa: 'h\u0289\u02d0s' },
+                ]},
+            ]
+        },
+        {
+            name: '"fish" (Fisch/fisk)',
+            root: 'Proto-Germanic',
+            branches: [
+                { label: 'West Germanic', ipa: '', descendants: [
+                    { label: 'English', ipa: 'f\u026a\u0283' },
+                    { label: 'German', ipa: 'f\u026a\u0283' },
+                    { label: 'Dutch', ipa: 'v\u026as' },
+                ]},
+                { label: 'North Germanic', ipa: '', descendants: [
+                    { label: 'Swedish', ipa: 'f\u026ask' },
+                    { label: 'Icelandic', ipa: 'f\u026askr' },
+                ]},
+            ]
+        },
+    ],
+    'Slavic': [
+        {
+            name: '"fire" (ogon/ohe\u0148)',
+            root: 'Proto-Slavic',
+            branches: [
+                { label: 'East Slavic', ipa: '', descendants: [
+                    { label: 'Russian', ipa: '\u0250\u0261on\u02b2' },
+                    { label: 'Ukrainian', ipa: 'v\u0254\u0261on\u02b2' },
+                ]},
+                { label: 'West Slavic', ipa: '', descendants: [
+                    { label: 'Polish', ipa: '\u0254\u0261\u025b\u0272' },
+                    { label: 'Czech', ipa: '\u0254\u0266\u025b\u0272' },
+                ]},
+            ]
+        },
+        {
+            name: '"eye" (oko/\u043e\u043a\u043e)',
+            root: 'Proto-Slavic',
+            branches: [
+                { label: 'East Slavic', ipa: '', descendants: [
+                    { label: 'Russian', ipa: '\u0261l\u0250s' },
+                    { label: 'Ukrainian', ipa: '\u0254k\u0254' },
+                ]},
+                { label: 'South Slavic', ipa: '', descendants: [
+                    { label: 'Serbian', ipa: '\u0254k\u0254' },
+                    { label: 'Bulgarian', ipa: '\u0254k\u0254' },
+                ]},
+            ]
+        },
+    ],
+    'Indo-Aryan': [
+        {
+            name: '"nose" (n\u0101k/nak)',
+            root: 'Proto-Indo-Aryan',
+            branches: [
+                { label: 'Central', ipa: '', descendants: [
+                    { label: 'Hindi', ipa: 'na\u02d0k' },
+                    { label: 'Urdu', ipa: 'na\u02d0k' },
+                ]},
+                { label: 'Eastern', ipa: '', descendants: [
+                    { label: 'Bengali', ipa: 'nak' },
+                    { label: 'Assamese', ipa: 'na\u02d0k' },
+                ]},
+                { label: 'Southern', ipa: '', descendants: [
+                    { label: 'Marathi', ipa: 'na\u02d0k' },
+                    { label: 'Sinhala', ipa: 'n\u00e6sa' },
+                ]},
+            ]
+        },
+        {
+            name: '"tooth" (d\u0101nt/dant)',
+            root: 'Proto-Indo-Aryan',
+            branches: [
+                { label: 'Central', ipa: '', descendants: [
+                    { label: 'Hindi', ipa: 'da\u0303\u02d0t' },
+                    { label: 'Punjabi', ipa: 'd\u0259\u0300nd' },
+                ]},
+                { label: 'Eastern', ipa: '', descendants: [
+                    { label: 'Bengali', ipa: 'd\u0251\u0303t' },
+                    { label: 'Odia', ipa: 'danta' },
+                ]},
+            ]
+        },
+    ],
+    'Sinitic': [
+        {
+            name: '"mountain" (sh\u0101n/\u5c71)',
+            root: 'Proto-Sinitic',
+            branches: [
+                { label: 'Mandarin group', ipa: '', descendants: [
+                    { label: 'Mandarin', ipa: '\u0282an' },
+                    { label: 'Jin', ipa: 's\u0250\u0303' },
+                ]},
+                { label: 'Southern group', ipa: '', descendants: [
+                    { label: 'Cantonese', ipa: 'sa\u02d0n' },
+                    { label: 'Hakka', ipa: 'san' },
+                    { label: 'Hokkien', ipa: 'swa\u0303' },
+                ]},
+            ]
+        },
+        {
+            name: '"person" (r\u00e9n/\u4eba)',
+            root: 'Proto-Sinitic',
+            branches: [
+                { label: 'Mandarin group', ipa: '', descendants: [
+                    { label: 'Mandarin', ipa: '\u0290\u0259n' },
+                    { label: 'Jin', ipa: 'z\u0259\u014b' },
+                ]},
+                { label: 'Southern group', ipa: '', descendants: [
+                    { label: 'Cantonese', ipa: 'j\u0250n' },
+                    { label: 'Hakka', ipa: '\u014bin' },
+                    { label: 'Hokkien', ipa: 'l\u0250\u014b' },
+                ]},
+            ]
+        },
+    ],
+    'Turkic': [
+        {
+            name: '"eye" (g\u00f6z/k\u00f6z)',
+            root: 'Proto-Turkic',
+            branches: [
+                { label: 'Oghuz', ipa: '', descendants: [
+                    { label: 'Turkish', ipa: '\u0261\u00f8z' },
+                    { label: 'Azerbaijani', ipa: '\u0261\u00f8z' },
+                ]},
+                { label: 'Kipchak', ipa: '', descendants: [
+                    { label: 'Kazakh', ipa: 'k\u00f8z' },
+                    { label: 'Uzbek', ipa: 'k\u00f8z' },
+                ]},
+            ]
+        },
+        {
+            name: '"water" (su/suv)',
+            root: 'Proto-Turkic',
+            branches: [
+                { label: 'Oghuz', ipa: '', descendants: [
+                    { label: 'Turkish', ipa: 'su' },
+                    { label: 'Azerbaijani', ipa: 'su' },
+                ]},
+                { label: 'Kipchak', ipa: '', descendants: [
+                    { label: 'Kazakh', ipa: 's\u0289' },
+                    { label: 'Kyrgyz', ipa: 'suu' },
+                ]},
+            ]
+        },
+    ],
+};
 
+function loadDemo(demo) {
     document.getElementById('root-label').value = demo.root;
     const container = document.getElementById('intermediates-container');
     container.innerHTML = '';
@@ -184,7 +364,47 @@ document.getElementById('btn-load-demo').addEventListener('click', () => {
     demo.branches.forEach(b => {
         addIntermediate(b.label, b.ipa, b.descendants);
     });
+    // Close menu
+    document.getElementById('demo-menu').style.display = 'none';
+}
+
+function buildDemoMenu() {
+    const menu = document.getElementById('demo-menu');
+    let html = '';
+    for (const [family, demos] of Object.entries(DEMOS)) {
+        html += `<div class="demo-group">`;
+        html += `<div class="demo-group-label">${family}</div>`;
+        demos.forEach((d, i) => {
+            html += `<button class="demo-item" data-family="${family}" data-index="${i}">${d.name}</button>`;
+        });
+        html += `</div>`;
+    }
+    menu.innerHTML = html;
+    menu.querySelectorAll('.demo-item').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const fam = btn.dataset.family;
+            const idx = parseInt(btn.dataset.index);
+            loadDemo(DEMOS[fam][idx]);
+        });
+    });
+}
+
+document.getElementById('btn-load-demo').addEventListener('click', (e) => {
+    e.stopPropagation();
+    const menu = document.getElementById('demo-menu');
+    const visible = menu.style.display !== 'none';
+    menu.style.display = visible ? 'none' : 'block';
 });
+
+// Close menu when clicking outside
+document.addEventListener('click', (e) => {
+    const wrap = document.querySelector('.demo-picker-wrap');
+    if (wrap && !wrap.contains(e.target)) {
+        document.getElementById('demo-menu').style.display = 'none';
+    }
+});
+
+buildDemoMenu();
 
 // ─── Build tree from editor ───
 
