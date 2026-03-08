@@ -496,6 +496,7 @@ document.getElementById('method-select').addEventListener('change', async () => 
 function displayResults(result) {
     const panel = document.getElementById('results-panel');
     panel.style.display = 'block';
+    document.querySelector('.app-layout').classList.add('has-results');
 
     if (result.error) {
         document.getElementById('proto-form-display').textContent = '';

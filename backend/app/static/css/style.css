@@ -62,14 +62,23 @@ main {
 
 .app-layout {
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: 1fr;
     gap: 20px;
     align-items: start;
+    max-width: 650px;
+    margin: 0 auto;
+    transition: max-width 0.5s ease, grid-template-columns 0.5s ease;
+}
+
+.app-layout.has-results {
+    grid-template-columns: 1fr 1fr;
+    max-width: none;
 }
 
 @media (max-width: 1000px) {
-    .app-layout {
+    .app-layout, .app-layout.has-results {
         grid-template-columns: 1fr;
+        max-width: none;
     }
 }
 
