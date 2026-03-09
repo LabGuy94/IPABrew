@@ -27,3 +27,30 @@ torchshow
 
 # Testing
 pytest>=7.0
+flask
+flask-cors
+gunicorn
+lingpy
+lingrex
+pandas
+panphon
+pyyaml
+einops
+flask
+flask-cors
+gunicorn
+lingpy
+lingrex
+pandas
+panphon
+pytest
+pytorch-lightning
+pyyaml
+regex
+scikit-learn
+scipy
+tabulate
+torch
+torchmetrics
+torchshow
+transformers

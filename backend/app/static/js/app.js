@@ -17,6 +17,53 @@ function showError(container, message) {
     container.appendChild(div);
 }
 
+function showToast(message, type = 'error') {
+    const container = document.getElementById('toast-container');
+    const toast = document.createElement('div');
+    toast.className = `toast toast-${type}`;
+    toast.textContent = message;
+    container.appendChild(toast);
+    requestAnimationFrame(() => {
+        requestAnimationFrame(() => toast.classList.add('show'));
+    });
+    setTimeout(() => {
+        toast.classList.remove('show');
+        setTimeout(() => toast.remove(), 350);
+    }, 3500);
+}
+
+function showConfirmToast(message, onConfirm) {
+    const container = document.getElementById('toast-container');
+    const existing = container.querySelector('.toast-confirm');
+    if (existing) { existing.classList.remove('show'); existing.remove(); }
+    const toast = document.createElement('div');
+    toast.className = 'toast toast-confirm show';
+    const msg = document.createElement('span');
+    msg.className = 'toast-confirm-msg';
+    msg.textContent = message;
+    const btnRow = document.createElement('span');
+    btnRow.className = 'toast-confirm-actions';
+    const btnYes = document.createElement('button');
+    btnYes.className = 'toast-confirm-btn toast-confirm-yes';
+    btnYes.textContent = 'Yes';
+    const btnNo = document.createElement('button');
+    btnNo.className = 'toast-confirm-btn toast-confirm-no';
+    btnNo.textContent = 'Cancel';
+    btnRow.appendChild(btnYes);
+    btnRow.appendChild(btnNo);
+    toast.appendChild(msg);
+    toast.appendChild(btnRow);
+    container.appendChild(toast);
+    function dismiss() {
+        toast.classList.remove('show');
+        setTimeout(() => toast.remove(), 350);
+    }
+    btnYes.addEventListener('click', () => { dismiss(); onConfirm(); });
+    btnNo.addEventListener('click', dismiss);
+}
+
+let lastReconstructResult = null;
+
 // ─── Tree Editor State ───
 
 let branchCounter = 0;
@@ -121,11 +168,14 @@ document.getElementById('btn-add-intermediate').addEventListener('click', () => 
 });
 
 document.getElementById('btn-clear').addEventListener('click', () => {
-    initTree();
-    lastTreePayload = null;
-    document.getElementById('root-label').value = 'Proto-Language';
-    document.getElementById('results-panel').style.display = 'none';
-    document.querySelector('.app-layout').classList.remove('has-results');
+    showConfirmToast('Clear the entire tree? This cannot be undone.', () => {
+        initTree();
+        lastTreePayload = null;
+        lastReconstructResult = null;
+        document.getElementById('root-label').value = 'Proto-Language';
+        document.getElementById('results-panel').style.display = 'none';
+        document.querySelector('.app-layout').classList.remove('has-results');
+    });
 });
 
 // ─── Demo Data ───
@@ -398,7 +448,9 @@ function buildDemoMenu() {
         btn.addEventListener('click', () => {
             const fam = btn.dataset.family;
             const idx = parseInt(btn.dataset.index);
-            loadDemo(DEMOS[fam][idx]);
+            showConfirmToast('Load demo? This will replace your current tree.', () => {
+                loadDemo(DEMOS[fam][idx]);
+            });
         });
     });
 }
@@ -459,7 +511,7 @@ document.getElementById('btn-reconstruct').addEventListener('click', async () =>
     for (const branch of tree.children) {
         for (const desc of branch.children) {
             if (!desc.ipa) {
-                alert(`Descendant "${desc.label}" is missing IPA input.`);
+                showToast(`Descendant "${desc.label}" is missing IPA input.`);
                 return;
             }
         }
@@ -473,7 +525,7 @@ document.getElementById('btn-reconstruct').addEventListener('click', async () =>
         const method = document.getElementById('method-select').value;
         lastTreePayload = tree;
         const result = await apiPost('/reconstruct_tree', { tree, method });
-        displayResults(result);
+        displayResults(result, method);
     } catch (e) {
         const panel = document.getElementById('results-panel');
         const layout = document.querySelector('.app-layout');
@@ -495,7 +547,7 @@ document.getElementById('method-select').addEventListener('change', async () => 
     btn.innerHTML = '<span class="loading"></span>Reconstructing...';
     try {
         const result = await apiPost('/reconstruct_tree', { tree: lastTreePayload, method });
-        displayResults(result);
+        displayResults(result, method);
     } catch (e) {
         const panel = document.getElementById('results-panel');
         showError(panel, 'Error: ' + e.message);
@@ -507,27 +559,39 @@ document.getElementById('method-select').addEventListener('change', async () => 
 
 // ─── Display Results ───
 
-function displayResults(result) {
+function displayResults(result, requestedMethod) {
     const panel = document.getElementById('results-panel');
     const layout = document.querySelector('.app-layout');
     if (!layout.classList.contains('has-results')) {
         panel.style.display = 'block';
-        // Force layout calc so the browser sees the pre-transition state
         panel.offsetHeight;
         layout.classList.add('has-results');
     }
+
+    const existingBanner = panel.querySelector('.method-fallback-banner');
+    if (existingBanner) existingBanner.remove();
 
     if (result.error) {
         document.getElementById('proto-form-display').textContent = '';
         showError(document.getElementById('tree-container'), result.error);
         document.getElementById('similarity-matrix').innerHTML = '';
         document.getElementById('ages-display').innerHTML = '';
+        lastReconstructResult = null;
         return;
+    }
+
+    lastReconstructResult = result;
+
+    if (requestedMethod === 'ml' && result.method_used && result.method_used !== 'ml') {
+        const banner = document.createElement('div');
+        banner.className = 'method-fallback-banner';
+        banner.textContent = 'ML model unavailable — used algorithmic reconstruction instead.';
+        const methodSelector = panel.querySelector('.method-selector');
+        methodSelector.insertAdjacentElement('afterend', banner);
     }
 
     const tree = result.tree;
 
-    // Show root proto-form
     const protoDisplay = document.getElementById('proto-form-display');
     protoDisplay.textContent = `*${tree.ipa}`;
     if (tree.reconstructed) {
@@ -536,21 +600,16 @@ function displayResults(result) {
         tag.textContent = 'reconstructed';
         protoDisplay.appendChild(tag);
     }
-    const methodSelect = document.getElementById('method-select');
-    if (methodSelect) {
-        const badge = document.createElement('span');
-        badge.className = 'method-badge';
-        badge.textContent = methodSelect.value === 'ml' ? 'ML' : 'Algorithm';
-        protoDisplay.appendChild(badge);
-    }
+    const actualMethod = result.method_used || requestedMethod;
+    const badge = document.createElement('span');
+    badge.className = 'method-badge';
+    badge.textContent = actualMethod === 'ml' ? 'ML' : 'Algorithm';
+    protoDisplay.appendChild(badge);
 
-    // Draw tree with ages
     drawTree(tree);
 
-    // Show similarity matrix
     if (result.similarity_matrix) displaySimilarityMatrix(result.similarity_matrix);
 
-    // Show relative ages
     displayAges(tree);
 }
 
@@ -583,7 +642,7 @@ function displaySimilarityMatrix(matrix) {
     }
 
     html += '</tbody></table>';
-    container.innerHTML = html;
+    container.innerHTML = '<div class="sim-matrix-wrap">' + html + '</div>';
 }
 
 function simColor(value, isDiagonal) {
@@ -972,6 +1031,10 @@ function renderIPATab() {
 
     const sections = showAll ? [...data.common, ...(data.extended || [])] : data.common;
 
+    html += '<div class="ipa-kb-section-label">Utilities</div>';
+    html += '<button type="button" class="ipa-kb-key ipa-kb-util" data-action="backspace" title="Backspace">⌫ Bksp</button>';
+    html += '<button type="button" class="ipa-kb-key ipa-kb-util" data-action="space" title="Space">␣ Space</button>';
+
     for (const section of sections) {
         html += `<div class="ipa-kb-section-label">${section.label}</div>`;
         for (const [sym, desc] of section.symbols) {
@@ -1003,11 +1066,27 @@ document.querySelector('.ipa-kb-tabs').addEventListener('click', (e) => {
     renderIPATab();
 });
 
-// Key clicks — insert character
 document.getElementById('ipa-kb-body').addEventListener('click', (e) => {
     const key = e.target.closest('.ipa-kb-key');
     if (!key || !ipaActiveInput) return;
-    insertAtCursor(ipaActiveInput, key.dataset.char);
+
+    const action = key.dataset.action;
+    if (action === 'backspace') {
+        const start = ipaActiveInput.selectionStart;
+        const end = ipaActiveInput.selectionEnd;
+        if (start === end && start > 0) {
+            ipaActiveInput.value = ipaActiveInput.value.substring(0, start - 1) + ipaActiveInput.value.substring(end);
+            ipaActiveInput.setSelectionRange(start - 1, start - 1);
+        } else if (start !== end) {
+            ipaActiveInput.value = ipaActiveInput.value.substring(0, start) + ipaActiveInput.value.substring(end);
+            ipaActiveInput.setSelectionRange(start, start);
+        }
+        ipaActiveInput.focus();
+    } else if (action === 'space') {
+        insertAtCursor(ipaActiveInput, ' ');
+    } else {
+        insertAtCursor(ipaActiveInput, key.dataset.char);
+    }
 });
 
 // Show all toggle
@@ -1038,4 +1117,50 @@ document.querySelector('.tree-editor').addEventListener('focusin', (e) => {
         ipaActiveInput = e.target;
         updateFieldToggleStates();
     }
+});
+
+// ─── Export ───
+
+function downloadFile(filename, content, mimeType) {
+    const blob = new Blob([content], { type: mimeType });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+}
+
+document.getElementById('btn-export-svg').addEventListener('click', () => {
+    const svg = document.querySelector('#tree-container svg');
+    if (!svg) {
+        showToast('No tree to export. Run a reconstruction first.', 'info');
+        return;
+    }
+    const clone = svg.cloneNode(true);
+    clone.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
+    const styles = document.createElement('style');
+    styles.textContent = `
+        .tree-link { fill: none; stroke: #8a7e6f; stroke-width: 1.5; }
+        .node-label { font-family: Georgia, serif; font-size: 12px; fill: #3b3228; }
+        .node-age-tag { font-family: Georgia, serif; font-size: 10px; fill: #8a7e6f; }
+        .root circle { fill: #8b5e3c; }
+        .intermediate circle { fill: #5b6e8a; }
+        circle { fill: #4a6741; }
+    `;
+    clone.insertBefore(styles, clone.firstChild);
+    const serializer = new XMLSerializer();
+    const svgStr = '<?xml version="1.0" encoding="UTF-8"?>\n' + serializer.serializeToString(clone);
+    downloadFile('ipabrew-tree.svg', svgStr, 'image/svg+xml');
+});
+
+document.getElementById('btn-export-json').addEventListener('click', () => {
+    if (!lastReconstructResult) {
+        showToast('No results to export. Run a reconstruction first.', 'info');
+        return;
+    }
+    const json = JSON.stringify(lastReconstructResult, null, 2);
+    downloadFile('ipabrew-results.json', json, 'application/json');
 });

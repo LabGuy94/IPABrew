@@ -1,5 +1,7 @@
 # IPABrew
 
+![ipabrew](https://github.com/user-attachments/assets/f35799fe-8e9f-47c1-b73f-b5521af8c65d)
+
 IPABrew is a web application for reconstructing proto-language forms from cognate words across related languages. It combines neural ML models with traditional linguistic algorithms to infer ancestral word forms, visualize language family trees, and estimate divergence dates.
 
 ## Backstory

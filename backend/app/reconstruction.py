@@ -260,8 +260,10 @@ def reconstruct_tree(tree, method="ml"):
 
     if method == "ml" and dpd_service.is_available():
         result_tree = _reconstruct_node(tree, _reconstruct_ml)
+        actual_method = "ml"
     else:
         result_tree = _reconstruct_node(tree, _reconstruct_algorithmic)
+        actual_method = "algorithm"
     if "error" in result_tree:
         return result_tree
 
@@ -277,6 +279,7 @@ def reconstruct_tree(tree, method="ml"):
     return {
         "tree": result_tree,
         "similarity_matrix": matrix,
+        "method_used": actual_method,
     }
 
 

@@ -4,10 +4,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>IPABrew</title>
+    <!-- FAVICON: replace /static/favicon.png to swap the icon -->
+    <link rel="icon" type="image/png" href="/static/favicon.png">
     <link rel="stylesheet" href="/static/css/style.css">
     <script src="https://d3js.org/d3.v7.min.js"></script>
 </head>
 <body>
+    <div class="toast-container" id="toast-container"></div>
     <header>
         <h1>IPABrew</h1>
         <p class="subtitle">Define a language tree, input IPA for descendants, and reconstruct ancestral forms using neural ML or traditional algorithms</p>
@@ -80,6 +83,11 @@
                     <h3>Estimated Relative Ages</h3>
                     <p class="help-text">Estimated years before present, derived from phonological rate of change.</p>
                     <div id="ages-display"></div>
+                </div>
+
+                <div class="export-row">
+                    <button id="btn-export-svg" class="btn-export">Download Tree (SVG)</button>
+                    <button id="btn-export-json" class="btn-export">Download Data (JSON)</button>
                 </div>
             </div>
         </div>
