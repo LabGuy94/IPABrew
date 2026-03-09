@@ -1,0 +1,70 @@
+# DPD BiReconstructor model configuration
+# Extracted from the training run (hackathon, Google Colab A100, epoch 34 checkpoint)
+
+dataset: combined
+batch_size: 256
+test_val_batch_size: 128
+min_daughters: 1
+skip_daughter_tone: false
+skip_protoform_tone: false
+d2p_use_lang_separaters: true
+p2d_all_lang_summary_only: true
+proportion_labelled: 1.0
+transformer_d2p_d_cat_style: true
+exclude_unlabelled: true
+
+use_xavier_init: true
+lr: 0.0007
+max_epochs: 50
+warmup_epochs: 5
+beta1: 0.9
+beta2: 0.999
+eps: 1.0e-08
+weight_decay: 1.0e-07
+
+architecture: Transformer
+
+# Daughter-to-proto encoder-decoder
+d2p_num_encoder_layers: 2
+d2p_num_decoder_layers: 2
+d2p_embedding_dim: 384
+d2p_nhead: 8
+d2p_feedforward_dim: 512
+d2p_dropout_p: 0.16
+d2p_max_len: 128
+d2p_inference_decode_max_length: 30
+
+# Proto-to-daughter encoder-decoder
+p2d_num_encoder_layers: 2
+p2d_num_decoder_layers: 2
+p2d_embedding_dim: 384
+p2d_nhead: 8
+p2d_feedforward_dim: 512
+p2d_dropout_p: 0.34
+p2d_max_len: 128
+p2d_inference_decode_max_length: 30
+
+universal_embedding: true
+universal_embedding_dim: 256
+datasetseed: 850145356
+
+strategy_config:
+  strategy_class_name: GreedySampleCringeBackpropThroughout
+  has_p2d: true
+  strategy_kwargs:
+    d2p_recon_loss_weight: 0.63
+    d2p_kl_loss_weight: 0.5
+    emb_pred_loss_weight: 0.5
+    p2d_loss_on_gold_weight: 0.63
+    p2d_loss_on_pred_weight: 1.2
+    cringe_alpha: 0.38
+    cringe_k: 1
+    alignment_convolution_masking: false
+    convolution_masking_residue: 0.2
+    enable_pi_model: false
+    pi_consistency_type: null
+    pi_consistency_rampup_length: null
+    pi_max_consistency_scaling: null
+    pi_proportion_labelled: null
+  strategy_checkpoint_method: null
+  early_stopping_method: null

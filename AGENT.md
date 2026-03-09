@@ -31,11 +31,14 @@ Serves at http://localhost:8080. DPD model loads eagerly at startup.
 - `backend/data/romance_ipa.tsv` -- bundled Meloni Romance dataset
 - `model/checkpoints/epoch34.ckpt` -- trained model checkpoint (77MB)
 - `model/data/combined/` -- pre-processed training/eval data (pickle files)
+- `model/checkpoints/model_config.yaml` -- training configuration (hyperparams, architecture)
+- `model/notebooks/train_dpd.ipynb` -- Google Colab training notebook
+- `backend/tests/` -- pytest test suite
 
 ## Architecture Notes
 
 - DPD model loads eagerly at startup via `dpd_service.init()` in the app factory
-- Model loading does `os.chdir()` during init (thread-unsafe, known tech debt)
+- Vendored DPD code (`backend/app/dpd/`) uses relative imports patched for our directory layout
 - `reconstruction.py` handles both ML and algorithmic reconstruction paths
 - ML path: calls `dpd_service.predict_proto()` for neural inference
 - Algorithmic path: LingPy `Multiple.prog_align()` + majority vote
@@ -45,11 +48,11 @@ Serves at http://localhost:8080. DPD model loads eagerly at startup.
 
 ## Testing
 
-No test suite currently. Backend has no automated tests.
+```
+cd backend && python -m pytest tests/ -v
+```
 
 ## Known Issues
 
-- `os.chdir()` in `dpd_service.py` during model load is not thread-safe
-- CONFIG dict for model is hardcoded (mirrors the training run configuration)
 - wandb is mocked out since the vendored DPD code imports it but we don't use it
 - The venv in `backend/venv/` is Python 3.11 but works with 3.12+

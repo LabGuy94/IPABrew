@@ -2,15 +2,14 @@ from __future__ import annotations
 from typing import Annotated
 from typing import TYPE_CHECKING
 
-from models.biDirReconIntegration import biDirReconModelRNN, biDirReconModelTrans
-from models.bidir_strats.base import *
+from ..biDirReconIntegration import biDirReconModelTrans
+from .base import *
 import wandb
 from copy import copy
 import random
 from torch import Tensor
 import numpy as np
 
-someBiDirModel = biDirReconModelRNN | biDirReconModelTrans
 
 class SupervisedOnlyD2P(BidirTrainStrategyBase):
     def __init__(
@@ -18,23 +17,14 @@ class SupervisedOnlyD2P(BidirTrainStrategyBase):
     ) -> None:
         super().__init__()
     
-    def extra_init(strat, self: someBiDirModel):
+    def extra_init(strat, self: biDirReconModelTrans):
         self.logger_prefix = 'd2p_supervised_only'
 
-    def training_step(strat, self: someBiDirModel, batch: batch_t, batch_idx: int) -> Tensor:
+    def training_step(strat, self: biDirReconModelTrans, batch: batch_t, batch_idx: int) -> Tensor:
         
-        match self:
-            case biDirReconModelRNN():
-                _logits, loss, recon_loss, kl_loss = self.d2p.forward_on_batch(batch)
-                
-            case biDirReconModelTrans():
-                _logits, recon_loss, _decoder_out = self.d2p.forward_on_batch(batch)
-                loss = recon_loss
-                kl_loss = None
-                
-            case _:
-                assert False, 'bad'
-            
+        _logits, recon_loss, _decoder_out = self.d2p.forward_on_batch(batch)
+        loss = recon_loss
+        kl_loss = None
         # print(recon_loss)
         
         try:
@@ -47,25 +37,25 @@ class SupervisedOnlyD2P(BidirTrainStrategyBase):
                          
         return loss
     
-    def on_train_epoch_end(strat, self: someBiDirModel) -> dict | None:
+    def on_train_epoch_end(strat, self: biDirReconModelTrans) -> dict | None:
         return
     
-    def validation_step(strat, self: someBiDirModel, batch: batch_t, batch_idx: int) -> Tensor:
+    def validation_step(strat, self: biDirReconModelTrans, batch: batch_t, batch_idx: int) -> Tensor:
         return
     
-    def test_step(strat, self: someBiDirModel, batch: batch_t, batch_idx: int) -> Tensor:
+    def test_step(strat, self: biDirReconModelTrans, batch: batch_t, batch_idx: int) -> Tensor:
         return
 
-    def on_validation_epoch_end(strat, self: someBiDirModel):
+    def on_validation_epoch_end(strat, self: biDirReconModelTrans):
         return strat.shared_eval_epoch_end(self, 'val')
     
-    def on_test_epoch_end(strat, self: someBiDirModel):
+    def on_test_epoch_end(strat, self: biDirReconModelTrans):
         if self.transductive_test:
             return strat.shared_eval_epoch_end(self, 'transductive')
         else:
             return strat.shared_eval_epoch_end(self, 'test')
 
-    def shared_eval_epoch_end(strat, self: someBiDirModel, prefix: str) -> dict | None:
+    def shared_eval_epoch_end(strat, self: biDirReconModelTrans, prefix: str) -> dict | None:
         
         # run d2p's eval routine
         

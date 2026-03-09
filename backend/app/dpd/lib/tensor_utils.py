@@ -1,6 +1,6 @@
 import torch
 from torch import Tensor
-from specialtokens import *
+from ..specialtokens import *
 import torch.nn.functional as F
 import torch.nn as nn
 from einops import rearrange, repeat

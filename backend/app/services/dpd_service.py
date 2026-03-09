@@ -23,6 +23,7 @@ _BACKEND_DIR = os.path.dirname(_APP_DIR)
 _PROJECT_ROOT = os.path.dirname(_BACKEND_DIR)
 _CHECKPOINT_PATH = os.path.join(_PROJECT_ROOT, "model", "checkpoints", "epoch34.ckpt")
 _DATA_DIR = os.path.join(_PROJECT_ROOT, "model", "data", "combined")
+_CONFIG_PATH = os.path.join(_PROJECT_ROOT, "model", "checkpoints", "model_config.yaml")
 
 # ── Module state ───────────────────────────────────────────────────────────────
 _model = None
@@ -67,111 +68,40 @@ def _load():
 
     _mock_wandb()
 
-    # Add DPD library to sys.path so its internal imports resolve
-    if _DPD_DIR not in sys.path:
-        sys.path.insert(0, _DPD_DIR)
 
     try:
         import torch
-        from lib.dataloader_manager import DataloaderManager
-        from models.biDirReconIntegration import biDirReconModelTrans
-        import models.biDirReconStrategies
-        import models.utils as model_utils  # noqa: F841
+        from app.dpd.lib.dataloader_manager import DataloaderManager
+        from app.dpd.models.biDirReconIntegration import biDirReconModelTrans
+        from app.dpd.models import biDirReconStrategies
+        from app.dpd.models import utils as model_utils  # noqa: F841
 
-        # Hardcoded config from the training run
-        CONFIG = dict(
-            dataset="combined",
-            batch_size=256,
-            test_val_batch_size=128,
-            min_daughters=1,
-            skip_daughter_tone=False,
-            skip_protoform_tone=False,
-            d2p_use_lang_separaters=True,
-            p2d_all_lang_summary_only=True,
-            proportion_labelled=1.0,
-            transformer_d2p_d_cat_style=True,
-            exclude_unlabelled=True,
-            use_xavier_init=True,
-            lr=0.0007,
-            max_epochs=50,
-            warmup_epochs=5,
-            beta1=0.9,
-            beta2=0.999,
-            eps=1e-08,
-            weight_decay=1e-07,
-            architecture="Transformer",
-            d2p_num_encoder_layers=2,
-            d2p_num_decoder_layers=2,
-            d2p_embedding_dim=384,
-            d2p_nhead=8,
-            d2p_feedforward_dim=512,
-            d2p_dropout_p=0.16,
-            d2p_max_len=128,
-            d2p_inference_decode_max_length=30,
-            p2d_num_encoder_layers=2,
-            p2d_num_decoder_layers=2,
-            p2d_embedding_dim=384,
-            p2d_nhead=8,
-            p2d_feedforward_dim=512,
-            p2d_dropout_p=0.34,
-            p2d_max_len=128,
-            p2d_inference_decode_max_length=30,
-            universal_embedding=True,
-            universal_embedding_dim=256,
-            datasetseed=850145356,
-            strategy_config=dict(
-                strategy_class_name="GreedySampleCringeBackpropThroughout",
-                has_p2d=True,
-                strategy_kwargs=dict(
-                    d2p_recon_loss_weight=0.63,
-                    d2p_kl_loss_weight=0.5,
-                    emb_pred_loss_weight=0.5,
-                    p2d_loss_on_gold_weight=0.63,
-                    p2d_loss_on_pred_weight=1.2,
-                    cringe_alpha=0.38,
-                    cringe_k=1,
-                    alignment_convolution_masking=False,
-                    convolution_masking_residue=0.2,
-                    enable_pi_model=False,
-                    pi_consistency_type=None,
-                    pi_consistency_rampup_length=None,
-                    pi_max_consistency_scaling=None,
-                    pi_proportion_labelled=None,
-                ),
-                strategy_checkpoint_method=None,
-                early_stopping_method=None,
-            ),
-        )
+        import yaml
+        with open(_CONFIG_PATH) as f:
+            CONFIG = yaml.safe_load(f)
 
         c = type("C", (), CONFIG)()
 
-        # DataloaderManager reads relative data paths from CWD;
-        # temporarily switch CWD and restore immediately after.
-        original_cwd = os.getcwd()
-        os.chdir(_DPD_DIR)
-        try:
-            dm = DataloaderManager(
-                data_dir=os.path.abspath(_DATA_DIR),
-                batch_size=c.batch_size,
-                test_val_batch_size=c.test_val_batch_size,
-                shuffle_train=False,
-                lang_separators=c.d2p_use_lang_separaters,
-                skip_daughter_tone=c.skip_daughter_tone,
-                skip_protoform_tone=c.skip_protoform_tone,
-                include_lang_tkns_in_ipa_vocab=True,
-                transformer_d2p_d_cat_style=c.transformer_d2p_d_cat_style,
-                daughter_subset=None,
-                min_daughters=c.min_daughters,
-                verbose=False,
-                proportion_labelled=c.proportion_labelled,
-                datasetseed=c.datasetseed,
-                exclude_unlabelled=c.exclude_unlabelled,
-            )
-        finally:
-            os.chdir(original_cwd)
+        dm = DataloaderManager(
+            data_dir=os.path.abspath(_DATA_DIR),
+            batch_size=c.batch_size,
+            test_val_batch_size=c.test_val_batch_size,
+            shuffle_train=False,
+            lang_separators=c.d2p_use_lang_separaters,
+            skip_daughter_tone=c.skip_daughter_tone,
+            skip_protoform_tone=c.skip_protoform_tone,
+            include_lang_tkns_in_ipa_vocab=True,
+            transformer_d2p_d_cat_style=c.transformer_d2p_d_cat_style,
+            daughter_subset=None,
+            min_daughters=c.min_daughters,
+            verbose=False,
+            proportion_labelled=c.proportion_labelled,
+            datasetseed=c.datasetseed,
+            exclude_unlabelled=c.exclude_unlabelled,
+        )
 
         strategy = getattr(
-            models.biDirReconStrategies,
+            biDirReconStrategies,
             c.strategy_config["strategy_class_name"],
         )(**c.strategy_config["strategy_kwargs"])
 
@@ -296,7 +226,7 @@ def _tokenize_ipa(ipa_str: str) -> list[str]:
         if segments:
             return segments
     except Exception:
-        pass
+        logger.debug("panphon segmentation failed for '%s', falling back to character-level", ipa_str, exc_info=True)
 
     # Fallback: character-level tokenization
     return list(ipa_str)
@@ -305,8 +235,8 @@ def _tokenize_ipa(ipa_str: str) -> list[str]:
 def _predict_protoform(cognate_set: dict[str, list[str]]) -> list[str]:
     """Run model inference on a single cognate set."""
     import torch
-    from lib.dataset import DatasetConcat
-    import models.utils as model_utils
+    from app.dpd.lib.dataset import DatasetConcat
+    from app.dpd.models import utils as model_utils
 
     proto_lang = _dm.langs[0]
 

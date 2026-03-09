@@ -102,20 +102,6 @@ def _majority_vote_column(column):
     return max(counts, key=counts.get)
 
 
-def _weighted_vote_column(column, weights=None):
-    if weights is None:
-        weights = [1.0] * len(column)
-
-    candidates = defaultdict(float)
-    for seg, w in zip(column, weights):
-        if seg != "-" and seg.strip():
-            candidates[seg] += w
-
-    if not candidates:
-        return "-"
-    return max(candidates, key=candidates.get)
-
-
 def reconstruct_from_cognates(cognate_words, language_labels=None):
     if not cognate_words or len(cognate_words) < 2:
         return {"error": "Need at least 2 cognate words"}
@@ -165,6 +151,7 @@ def reconstruct_from_cognates(cognate_words, language_labels=None):
                             "divergence": divergence,
                         })
                     except Exception:
+                        logger.debug("Distance computation failed for %s vs %s", w1, w2, exc_info=True)
                         distances.append({
                             "lang1": clean_labels[i],
                             "lang2": clean_labels[j],
@@ -272,9 +259,9 @@ def reconstruct_tree(tree, method="ml"):
         return {"error": "Tree must have at least one intermediate child"}
 
     if method == "ml" and dpd_service.is_available():
-        result_tree = _reconstruct_node_ml(tree)
+        result_tree = _reconstruct_node(tree, _reconstruct_ml)
     else:
-        result_tree = _reconstruct_node(tree)
+        result_tree = _reconstruct_node(tree, _reconstruct_algorithmic)
     if "error" in result_tree:
         return result_tree
 
@@ -307,6 +294,7 @@ def _build_similarity_matrix(labels, ipas):
                     ned = normalized_edit_distance(ipas[i], ipas[j])
                     row.append(round(1.0 - ned, 4))
                 except Exception:
+                    logger.debug("Similarity computation failed for %s vs %s", labels[i], labels[j], exc_info=True)
                     row.append(None)
         rows.append(row)
     return {"labels": labels, "values": rows}
@@ -364,32 +352,30 @@ def _assign_age_years(node):
             total_ned += ned
             count += 1
         except Exception:
-            pass
+            logger.debug("NED computation failed for age estimation", exc_info=True)
 
     avg_ned = (total_ned / count) if count > 0 else 0.0
     node["estimated_age_years"] = round(_ned_to_years(avg_ned))
 
 
-def _reconstruct_node_ml(node):
-    """Recursively reconstruct a node bottom-up using the DPD neural model."""
-    children = node.get("children")
+MAX_TREE_DEPTH = 20
 
-    # Leaf node
+
+def _reconstruct_node(node, reconstruct_fn, depth=0):
+    """Bottom-up tree reconstruction with pluggable reconstruction strategy."""
+    if depth > MAX_TREE_DEPTH:
+        return {"error": f"Tree depth exceeds maximum of {MAX_TREE_DEPTH}"}
+
+    children = node.get("children")
     if not children:
         ipa = (node.get("ipa") or "").strip()
         if not ipa:
             return {"error": f"Descendant '{node.get('label', '?')}' is missing IPA input"}
-        return {
-            "label": node.get("label", ""),
-            "ipa": ipa,
-            "type": "descendant",
-            "reconstructed": False,
-        }
+        return {"label": node.get("label", ""), "ipa": ipa, "type": "descendant", "reconstructed": False}
 
-    # Process children first (bottom-up)
     resolved_children = []
     for child in children:
-        resolved = _reconstruct_node_ml(child)
+        resolved = _reconstruct_node(child, reconstruct_fn, depth + 1)
         if "error" in resolved:
             return resolved
         resolved_children.append(resolved)
@@ -398,105 +384,61 @@ def _reconstruct_node_ml(node):
     ipa = (node.get("ipa") or "").strip()
 
     if not ipa:
-        # Collect IPA from immediate children to build cognate dict
-        cognates = {}
-        for child in resolved_children:
-            child_ipa = child.get("ipa", "").strip()
-            child_label = child.get("label", "")
-            if child_ipa and child_label:
-                cognates[child_label] = child_ipa
-
-        if len(cognates) < 2:
-            if len(cognates) == 1:
-                ipa = list(cognates.values())[0]
-            else:
-                return {"error": f"Node '{label}' has no IPA input and no descendants to reconstruct from"}
-        else:
-            try:
-                ipa = dpd_service.predict_proto(cognates)
-            except Exception as e:
-                return {"error": f"ML reconstruction failed for '{label}': {str(e)}"}
+        ipa, error = reconstruct_fn(label, resolved_children)
+        if error:
+            return {"error": error}
         reconstructed = True
     else:
         reconstructed = False
 
     is_root = node.get("_is_root", False)
-    node_type = "root" if is_root else "intermediate"
-
     return {
-        "label": label,
-        "ipa": ipa,
-        "type": node_type,
-        "reconstructed": reconstructed,
-        "children": resolved_children,
+        "label": label, "ipa": ipa,
+        "type": "root" if is_root else "intermediate",
+        "reconstructed": reconstructed, "children": resolved_children,
     }
 
 
-def _reconstruct_node(node):
-    """Recursively reconstruct a node bottom-up."""
-    children = node.get("children")
-
-    # Leaf node (descendant) — must have ipa
-    if not children:
-        ipa = (node.get("ipa") or "").strip()
-        if not ipa:
-            return {"error": f"Descendant '{node.get('label', '?')}' is missing IPA input"}
-        return {
-            "label": node.get("label", ""),
-            "ipa": ipa,
-            "type": "descendant",
-            "reconstructed": False,
-        }
-
-    # Has children — process children first
-    resolved_children = []
+def _reconstruct_ml(label, children):
+    """ML reconstruction strategy using DPD model."""
+    cognates = {}
     for child in children:
-        resolved = _reconstruct_node(child)
-        if "error" in resolved:
-            return resolved
-        resolved_children.append(resolved)
+        child_ipa = child.get("ipa", "").strip()
+        child_label = child.get("label", "")
+        if child_ipa and child_label:
+            cognates[child_label] = child_ipa
+    if len(cognates) < 2:
+        if len(cognates) == 1:
+            return list(cognates.values())[0], None
+        return None, f"Node '{label}' has no IPA input and no descendants to reconstruct from"
+    try:
+        ipa = dpd_service.predict_proto(cognates)
+        return ipa, None
+    except Exception as e:
+        return None, f"ML reconstruction failed for '{label}': {str(e)}"
 
-    label = node.get("label", "")
-    ipa = (node.get("ipa") or "").strip()
 
-    # If this node has no ipa, reconstruct from children
-    if not ipa:
-        child_words = _collect_ipa_from_children(resolved_children)
-        if len(child_words) < 2:
-            # Only one child — just propagate its form
-            if len(child_words) == 1:
-                ipa = child_words[0]
-            else:
-                return {"error": f"Node '{label}' has no IPA input and no descendants to reconstruct from"}
-        else:
-            try:
-                msa = Multiple(child_words)
-                msa.prog_align()
-                aligned = msa.alm_matrix
-                proto_segments = []
-                num_cols = len(aligned[0]) if aligned else 0
-                for col_idx in range(num_cols):
-                    column = [row[col_idx] for row in aligned]
-                    proto_seg = _majority_vote_column(column)
-                    proto_segments.append(proto_seg)
-                ipa = "".join(seg for seg in proto_segments if seg != "-")
-            except Exception as e:
-                return {"error": f"Reconstruction failed for '{label}': {str(e)}"}
-        reconstructed = True
-    else:
-        reconstructed = False
-
-    # Determine type: root (no parent context) or intermediate
-    is_root = node.get("_is_root", False)
-    node_type = "root" if is_root else "intermediate"
-
-    return {
-        "label": label,
-        "ipa": ipa,
-        "type": node_type,
-        "reconstructed": reconstructed,
-        "children": resolved_children,
-    }
+def _reconstruct_algorithmic(label, children):
+    """Algorithmic reconstruction using LingPy alignment + majority vote."""
+    child_words = _collect_ipa_from_children(children)
+    if len(child_words) < 2:
+        if len(child_words) == 1:
+            return child_words[0], None
+        return None, f"Node '{label}' has no IPA input and no descendants to reconstruct from"
+    try:
+        msa = Multiple(child_words)
+        msa.prog_align()
+        aligned = msa.alm_matrix
+        proto_segments = []
+        num_cols = len(aligned[0]) if aligned else 0
+        for col_idx in range(num_cols):
+            column = [row[col_idx] for row in aligned]
+            proto_seg = _majority_vote_column(column)
+            proto_segments.append(proto_seg)
+        ipa = "".join(seg for seg in proto_segments if seg != "-")
+        return ipa, None
+    except Exception as e:
+        return None, f"Reconstruction failed for '{label}': {str(e)}"
 
 
 def _collect_ipa_from_children(children):

@@ -2,32 +2,31 @@ from __future__ import annotations
 from typing import Annotated
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
-    from models.biDirReconIntegration import biDirReconModelRNN, biDirReconModelTrans
+    from ..biDirReconIntegration import biDirReconModelTrans
     
-from models.encoderDecoderRNN import Seq2SeqRNN # used as d2p
 import torch
 import pytorch_lightning as pl
 from torch import Tensor
 
-from specialtokens import *
+from ...specialtokens import *
 
-from models.partials.embedding import Embedding
-from models.partials.mlp import MLP
-from models.partials.attention import Attention
-from models.partials.rnn import GRURNN
-from models.partials.embeddingPredictionNet import EmbeddingPredictionNet
-from lib.vocab import Vocab
+from ..partials.embedding import Embedding
+from ..partials.mlp import MLP
+from ..partials.attention import Attention
+from ..partials.rnn import GRURNN
+from ..partials.embeddingPredictionNet import EmbeddingPredictionNet
+from ...lib.vocab import Vocab
 from einops import repeat, rearrange
-from lib.tensor_utils import sequences_equal, num_sequences_equal
+from ...lib.tensor_utils import sequences_equal, num_sequences_equal
 from torch.nn.utils.rnn import pad_sequence
 from pytorch_lightning.utilities.exceptions import MisconfigurationException
 import torch.nn as nn
-from models.utils import CringeLoss
+from ..utils import CringeLoss
 import torch.nn.functional as F
 from einops import rearrange, repeat
-import models.utils as utils
+from .. import utils
 
-from prelude import *
+from ...prelude import *
 
 # used to embed a strategy inside biDirReconModel, disregarding _fake_self and treating biDirReconModel as self. think of the methods inside a biDirReconModel, so a different self is used to access strategy-specific parameters
 class BidirTrainStrategyBase():
@@ -35,7 +34,7 @@ class BidirTrainStrategyBase():
         pass
     
     # add stuff to biDirReconModel, etc. Always called before training
-    def extra_init(_fake_self, self: biDirReconModelRNN | biDirReconModelTrans):
+    def extra_init(_fake_self, self: biDirReconModelTrans):
         pass
     
     def unpack_batch(self, batch) -> batch_t:
@@ -47,22 +46,22 @@ class BidirTrainStrategyBase():
         
         return (daughters_concat_seq, daughters_concat_langs, daughters_concat_seqs_lens, proto_seq), (prompted_proto_seq, prompted_proto_seqs_lens, target_ipa_langs, target_lang_langs, daughter_seqs), (prompted_proto_seqs_s, prompted_proto_seqs_lens_s, daughters_ipa_langs_s, daughters_lang_langs_s, daughters_seqs_s)
 
-    def training_step(_fake_self, self: biDirReconModelRNN | biDirReconModelTrans, batch: batch_t, batch_idx: int) -> Tensor:
+    def training_step(_fake_self, self: biDirReconModelTrans, batch: batch_t, batch_idx: int) -> Tensor:
         raise NotImplemented
     
-    def on_train_epoch_end(_fake_self, self: biDirReconModelRNN | biDirReconModelTrans) -> dict | None:
+    def on_train_epoch_end(_fake_self, self: biDirReconModelTrans) -> dict | None:
         raise NotImplemented
     
-    def validation_step(_fake_self, self: biDirReconModelRNN | biDirReconModelTrans, batch: batch_t, batch_idx: int) -> Tensor:
+    def validation_step(_fake_self, self: biDirReconModelTrans, batch: batch_t, batch_idx: int) -> Tensor:
         raise NotImplemented
     
-    def on_validation_epoch_end(_fake_self, self: biDirReconModelRNN | biDirReconModelTrans) -> dict | None:
+    def on_validation_epoch_end(_fake_self, self: biDirReconModelTrans) -> dict | None:
         raise NotImplemented
 
-    def test_step(_fake_self, self: biDirReconModelRNN | biDirReconModelTrans, batch: batch_t, batch_idx: int) -> Tensor:
+    def test_step(_fake_self, self: biDirReconModelTrans, batch: batch_t, batch_idx: int) -> Tensor:
         raise NotImplemented
     
-    def on_testepoch_end(_fake_self, self: biDirReconModelRNN | biDirReconModelTrans) -> dict | None:
+    def on_testepoch_end(_fake_self, self: biDirReconModelTrans) -> dict | None:
         raise NotImplemented
 
 # === beam strats ===
@@ -74,7 +73,7 @@ class BeamSampleStrategyBase(BidirTrainStrategyBase):
         super().__init__()
         self.beam_negative_sample_k = beam_negative_sample_k
 
-    def get_negative_samples_from_d2p(strat, self: biDirReconModelRNN | biDirReconModelTrans, batch, 
+    def get_negative_samples_from_d2p(strat, self: biDirReconModelTrans, batch, 
         top_k_incorrect: int, # want 5 bad and 1 good
         top_k_buffer: int, # beam search few more so we don't run out
     ):
@@ -120,7 +119,7 @@ class BeamSampleStrategyBase(BidirTrainStrategyBase):
         # correct_protos: list[N] of tensors (1, L_p)
         return incorrect_proto_sets, incorrect_proto_sets_s, correct_protos
 
-    def recon_proto_and_recon_daughter(strat, self: biDirReconModelRNN | biDirReconModelTrans, batch):
+    def recon_proto_and_recon_daughter(strat, self: biDirReconModelTrans, batch):
         
         # assumes batch[0] is d2p and batch[1] is from p2d AND they correspond to same cognate set (bug alert)
         (daughters_concat_seq, daughters_concat_langs, daughters_concat_seqs_lens, proto_seq), _, (prompted_proto_seqs_s, prompted_proto_seqs_lens_s, daughters_ipa_langs_s, daughters_lang_langs_s, daughters_seqs_s) = batch
@@ -233,7 +232,7 @@ class GreedySampleStrategyBase(BidirTrainStrategyBase):
     def __init__(self) -> None:
         super().__init__()
 
-    def recon_proto_and_recon_daughter(strat, self: biDirReconModelRNN | biDirReconModelTrans, batch):
+    def recon_proto_and_recon_daughter(strat, self: biDirReconModelTrans, batch):
         
         # assumes batch[0] is d2p and batch[1] is from p2d AND they correspond to same cognate set (bug alert)
         

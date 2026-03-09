@@ -4,7 +4,7 @@ from .vocab import build_vocab, Vocab
 from .dataset import DatasetConcat
 from torch.utils.data import DataLoader
 import os.path as path
-import specialtokens
+from .. import specialtokens
 import tabulate
 import pytorch_lightning as pl
 

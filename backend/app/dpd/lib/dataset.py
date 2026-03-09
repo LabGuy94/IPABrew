@@ -6,11 +6,11 @@ from torch.nn.utils.rnn import pad_sequence
 from torch.utils.data import Dataset
 from .vocab import Vocab
 import torch.nn.functional as F
-from lib.tensor_utils import random_mask_by_proportion_subsets
-from specialtokens import *
+from .tensor_utils import random_mask_by_proportion_subsets
+from ..specialtokens import *
 import copy
 from einops import repeat, rearrange
-from prelude import batch_t, LabelStatus
+from ..prelude import batch_t, LabelStatus
 import hashlib
 
 class DatasetBase(Dataset):

@@ -2,8 +2,8 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from lib.rescoring import Reranker, Rescorer
-    from lib.rescoring import BatchedGreedyBasedRerankerBase, BatchedReranker, BatchedRescorer
+    from ..lib.rescoring import Reranker, Rescorer
+    from ..lib.rescoring import BatchedGreedyBasedRerankerBase, BatchedReranker, BatchedRescorer
 
 import math
 import torch
@@ -11,14 +11,14 @@ import torch.nn as nn
 from torch.nn.utils.rnn import pad_sequence
 from torch.nn import TransformerEncoder, TransformerEncoderLayer
 import torchshow as ts
-from specialtokens import *
-from prelude import *
+from ..specialtokens import *
+from ..prelude import *
 from .partials.embedding import Embedding
 from .partials.mlp import MLP
 from .partials.attention import Attention
-from lib.vocab import Vocab
+from ..lib.vocab import Vocab
 from einops import rearrange, repeat
-import models.utils as utils
+from . import utils
 import transformers
 
 class TokenEmbedding(nn.Module):

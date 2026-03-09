@@ -4,7 +4,7 @@ IPABrew is a web application for reconstructing proto-language forms from cognat
 
 ## Backstory
 
-This project was created in ~8 hours for a hackathon, and was substantially AI assisted.
+This project was created in ~6 hours for a hackathon, and was substantially AI assisted.
 
 ## Quick Start
 
@@ -131,12 +131,16 @@ IPABrew/
 │   │   └── routes.py
 │   ├── data/
 │   │   └── romance_ipa.tsv
+│   ├── tests/                  # pytest test suite
 │   └── run.py                 # Dev server entrypoint
 ├── model/
 │   ├── checkpoints/
-│   │   └── epoch34.ckpt       # 77MB trained model
-│   └── data/
-│       └── combined/          # Training/eval data (pickle)
+│   │   ├── epoch34.ckpt       # 77MB trained model
+│   │   └── model_config.yaml  # Training configuration
+│   ├── data/
+│   │   └── combined/          # Training/eval data (pickle)
+│   └── notebooks/
+│       └── train_dpd.ipynb    # Google Colab training notebook
 ├── requirements.txt           # All Python dependencies
 ├── AGENT.md                   # AI agent development context
 └── README.md

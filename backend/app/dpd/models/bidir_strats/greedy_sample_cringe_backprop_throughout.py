@@ -2,12 +2,11 @@ from __future__ import annotations
 from typing import Annotated
 from typing import TYPE_CHECKING
 
-from models.biDirReconIntegration import biDirReconModelRNN, biDirReconModelTrans
-from models.bidir_strats.base import *
+from ..biDirReconIntegration import biDirReconModelTrans
+from .base import *
 import wandb
 from copy import copy
 from .consistency_regularisation_lib import sigmoid_rampup, augment, mse_consistency_loss, kl_consistency_loss
-someBiDirModel = biDirReconModelRNN | biDirReconModelTrans
 
 class GreedySampleCringeBackpropThroughout(GreedySampleStrategyBase):
     def __init__(strat,
@@ -64,38 +63,22 @@ class GreedySampleCringeBackpropThroughout(GreedySampleStrategyBase):
                 case _:
                     raise ValueError(f"Unknown consistency type: {strat.consistency_type}")
                 
-    def extra_init(strat, self: someBiDirModel):
+    def extra_init(strat, self: biDirReconModelTrans):
         
-        match self:
-            case biDirReconModelRNN():
-                self.decoder_state2embedding = MLP(
-                    input_dim = self.d2p.model_size,
-                    feedforward_dim = self.d2p.feedforward_dim, 
-                    output_size = self.p2d.embedding_dim,
-                ).to(self.device)
-            case biDirReconModelTrans():
-                self.decoder_state2embedding = MLP(
-                    input_dim = self.d2p.model_dim,
-                    feedforward_dim = self.d2p.feedforward_dim, 
-                    output_size = self.p2d.embedding_dim,
-                ).to(self.device)
-        
+        self.decoder_state2embedding = MLP(
+            input_dim = self.d2p.model_dim,
+            feedforward_dim = self.d2p.feedforward_dim, 
+            output_size = self.p2d.embedding_dim,
+        ).to(self.device)
         print("running extra init")
         
         if not self.universal_embedding:
             print("ERROR: universal_embedding required for this strategy.")
             assert False
         
-        match self:
-            case biDirReconModelRNN():
-                assert self.p2d.embeddings == self.d2p.embeddings == self.embeddings
-                assert self.p2d.embedding_dim == self.d2p.embedding_dim == self.universal_embedding_dim
-                if strat.enable_pi_model:
-                    assert self.d2p.use_vae_latent == False # no vae support here
-            case biDirReconModelTrans():
-                assert self.p2d.ipa_embedding == self.d2p.ipa_embedding == self.ipa_embedding
-                assert self.p2d.lang_embedding == self.d2p.lang_embedding == self.lang_embedding
-                assert self.p2d.embedding_dim == self.d2p.embedding_dim == self.universal_embedding_dim
+        assert self.p2d.ipa_embedding == self.d2p.ipa_embedding == self.ipa_embedding
+        assert self.p2d.lang_embedding == self.d2p.lang_embedding == self.lang_embedding
+        assert self.p2d.embedding_dim == self.d2p.embedding_dim == self.universal_embedding_dim
 
         self.samples_tables['val'] = wandb.Table(columns=["epoch", "p", "p_hat", "d_hat_on_pred", "d_hat_on_gold", "d", "d_lang", "pp_corr", "dp_on_pred_corr", "dp_on_gold_corr"])
         self.samples_tables['test'] = wandb.Table(columns=["epoch", "p", "p_hat", "d_hat_on_pred", "d_hat_on_gold", "d", "d_lang", "pp_corr", "dp_on_pred_corr", "dp_on_gold_corr"])
@@ -109,43 +92,34 @@ class GreedySampleCringeBackpropThroughout(GreedySampleStrategyBase):
             raise ValueError("pi model not enabled")
         return strat.max_consistency_scaling * strat.proportion_labelled * sigmoid_rampup(epoch, strat.consistency_rampup_length)
     
-    def training_step(strat, self: biDirReconModel, batch: batch_t, batch_idx: int) -> None:
+    def training_step(strat, self: biDirReconModelTrans, batch: batch_t, batch_idx: int) -> None:
         res_dict = strat.forward(self, batch, batch_idx, 'train')
         return res_dict['loss']
     
-    def on_train_epoch_end(strat, self: biDirReconModel) -> dict | None:
+    def on_train_epoch_end(strat, self: biDirReconModelTrans) -> dict | None:
         pass
     
-    def validation_step(strat, self: biDirReconModel, batch: batch_t, batch_idx: int) -> None:
+    def validation_step(strat, self: biDirReconModelTrans, batch: batch_t, batch_idx: int) -> None:
         res_dict = strat.shared_eval_step(self, batch, batch_idx, 'val')
         return
     
-    def test_step(strat, self: biDirReconModel, batch: batch_t, batch_idx: int) -> None:
+    def test_step(strat, self: biDirReconModelTrans, batch: batch_t, batch_idx: int) -> None:
         if self.transductive_test:
             res_dict = strat.shared_eval_step(self, batch, batch_idx, 'transductive')
         else:
             res_dict = strat.shared_eval_step(self, batch, batch_idx, 'test')
         return
     
-    def shared_eval_step(strat, self: biDirReconModel, batch: batch_t, batch_idx: int, prefix: str) -> None:
+    def shared_eval_step(strat, self: biDirReconModelTrans, batch: batch_t, batch_idx: int, prefix: str) -> None:
         res_dict = strat.forward(self, batch, batch_idx, prefix)
         if not 'step_res_dicts' in  self.evaluation_step_outputs:
             self.evaluation_step_outputs['step_res_dicts'] = []
         self.evaluation_step_outputs['step_res_dicts'].append(res_dict)
         return
     
-    def forward(strat, self: biDirReconModel, batch, batch_idx, curr_loop_mode):
+    def forward(strat, self: biDirReconModelTrans, batch, batch_idx, curr_loop_mode):
         train: bool = curr_loop_mode == 'train'
         eval: bool = curr_loop_mode == 'val' or curr_loop_mode == 'test' or curr_loop_mode == 'transductive'
-        is_transformer: bool
-        match self:
-            case biDirReconModelRNN():
-                is_transformer = False
-            case biDirReconModelTrans():
-                is_transformer = True
-            case _:
-                raise Absurd
-            
         # region === prep ===
 
         # p_l indicates we leak label for transductive evaluation on the hidden labels
@@ -169,7 +143,7 @@ class GreedySampleCringeBackpropThroughout(GreedySampleStrategyBase):
         d_padding_mask = (d_tkns_s == PAD_IDX) # (N, Nd, Ld+1)
         # Lp_l = p_l_tkns.shape[1] - 1
         
-        from prelude import LabelStatus
+        from ...prelude import LabelStatus
         labelled_p_mask = (p_fs == LabelStatus.LABELLED.value) # (N, 1)
         nonlabelled_p_mask = (~ labelled_p_mask) # (N, 1)
         pseudolabelled_p_mask = (p_fs == LabelStatus.PSEUDOLABEL.value) # (N, 1)
@@ -184,16 +158,10 @@ class GreedySampleCringeBackpropThroughout(GreedySampleStrategyBase):
         
         daughters_lang_langs_dummyized_pad_s = d_lang_langs_s + ((d_lang_langs_s == PAD_IDX) * self.p2d.min_possible_target_lang_langs_idx)
         
-        d2p_target_langs = p_lang_lang_vec if ((not is_transformer) and self.d2p.lang_embedding_when_decoder) else None
+        d2p_target_langs = None
 
-        match self:
-            case biDirReconModelRNN():
-                transformer_d2p_d_cat_style=False
-            case biDirReconModelTrans():
-                transformer_d2p_d_cat_style=True
-
+        transformer_d2p_d_cat_style=True
         # no vae support on p2d yet
-        assert is_transformer or (self.p2d.use_vae_latent == False)
         
         # endregion
         
@@ -203,24 +171,8 @@ class GreedySampleCringeBackpropThroughout(GreedySampleStrategyBase):
         
         if not strat.enable_pi_model:
             
-            if not is_transformer:
-            
-                d2p_decode_res = self.d2p.teacher_forcing_decode(d_cat_tkns, d_cat_langs, d_cat_lens, p_tkns, d2p_target_langs)
-                
-                d2p_logits = d2p_decode_res['logits'] # d2p_logits (N, Lp, V)
-                d2p_encoder_states =  d2p_decode_res['encoder_states']
-                encoder_h_n =  d2p_decode_res['encoder_h_n']
-                d2p_decoder_states =  d2p_decode_res['decoder_states'] # (N, Lp, Dd2p * Hd2p)
-                assert d2p_decoder_states.shape[-1] == self.d2p.model_size # (N, Lp, Hd2p), bidirectional decoder not supported yet
-                # IDEA: get the attention weighted states out?
-                
-                _, d2p_recon_loss, d2p_kl_loss = self.d2p.get_loss_from_teacher_forcing_decode_res(d2p_decode_res, p_tkns)
-            
-            else:
-                
-                d2p_logits, d2p_recon_loss, d2p_decoder_states = self.d2p.forward_on_batch(batch) # (N, Lp, V)
-                d2p_kl_loss = 0.0
-            
+            d2p_logits, d2p_recon_loss, d2p_decoder_states = self.d2p.forward_on_batch(batch) # (N, Lp, V)
+            d2p_kl_loss = 0.0
         else:
             
             # 1 > augment
@@ -230,41 +182,19 @@ class GreedySampleCringeBackpropThroughout(GreedySampleStrategyBase):
 
             # 2 > forward on both
                 
-            match self:
-                case biDirReconModelRNN():
-                    decode_res_aug1 = self.d2p.teacher_forcing_decode(d_cat_tkns_aug1, d_cat_langs_aug1, d_cat_lens_aug1, p_tkns, d2p_target_langs)
-                    logits_aug1 = decode_res_aug1['logits'] # (N, Lp, V)
-                    decode_res_aug2 = self.d2p.teacher_forcing_decode(d_cat_tkns_aug2, d_cat_langs_aug2, d_cat_lens_aug2, p_tkns, d2p_target_langs)
-                    logits_aug2 = decode_res_aug2['logits'] # (N, Lp, V)
-                    
-                    # 4 > adapt
-                    
-                    d2p_decode_res = decode_res_aug1
-                    
-                    d2p_logits = d2p_decode_res['logits'] # d2p_logits (N, Lp, V)
-                    d2p_encoder_states =  d2p_decode_res['encoder_states']
-                    encoder_h_n =  d2p_decode_res['encoder_h_n']
-                    d2p_decoder_states =  d2p_decode_res['decoder_states'] # (N, Lp, Dd2p * Hd2p)
-                    assert d2p_decoder_states.shape[-1] == self.d2p.model_size # (N, Lp, Hd2p), bidirectional decoder not supported yet
-
-                    d2p_decode_res = decode_res_aug1
-                case biDirReconModelTrans():
-                    
-                    logits_aug1, d2p_recon_loss_aug1, d2p_decoder_states_aug1 = self.d2p.forward_on_batch((
-                        (d_cat_tkns_aug1, d_cat_langs_aug1, d_cat_lens_aug1, d_indv_lens_aug1, p_lang_lang_vec, p_tkns, p_l_tkns, p_fs), (prompted_p_tkns, prompetd_p_lens, d_ipa_langs, d_lang_langs, d_tkns), (prompted_p_tkns_s, prompted_p_lens, d_ipa_langs_s, d_lang_langs_s, d_tkns_s)
-                    )) # (N, Lp, V)
-                    logits_aug2, d2p_recon_loss_aug2, d2p_decoder_states_aug2 = self.d2p.forward_on_batch((
-                        (d_cat_tkns_aug2, d_cat_langs_aug2, d_cat_lens_aug2, d_indv_lens_aug2, p_lang_lang_vec, p_tkns, p_l_tkns, p_fs), (prompted_p_tkns, prompetd_p_lens, d_ipa_langs, d_lang_langs, d_tkns), (prompted_p_tkns_s, prompted_p_lens, d_ipa_langs_s, d_lang_langs_s, d_tkns_s)
-                    )) # (N, Lp, V)
-                    
-                    # 4 > adapt
-                    
-                    d2p_logits = logits_aug1
-                    d2p_decoder_states = d2p_decoder_states_aug1
+            
+            logits_aug1, d2p_recon_loss_aug1, d2p_decoder_states_aug1 = self.d2p.forward_on_batch((
+                (d_cat_tkns_aug1, d_cat_langs_aug1, d_cat_lens_aug1, d_indv_lens_aug1, p_lang_lang_vec, p_tkns, p_l_tkns, p_fs), (prompted_p_tkns, prompetd_p_lens, d_ipa_langs, d_lang_langs, d_tkns), (prompted_p_tkns_s, prompted_p_lens, d_ipa_langs_s, d_lang_langs_s, d_tkns_s)
+            )) # (N, Lp, V)
+            logits_aug2, d2p_recon_loss_aug2, d2p_decoder_states_aug2 = self.d2p.forward_on_batch((
+                (d_cat_tkns_aug2, d_cat_langs_aug2, d_cat_lens_aug2, d_indv_lens_aug2, p_lang_lang_vec, p_tkns, p_l_tkns, p_fs), (prompted_p_tkns, prompetd_p_lens, d_ipa_langs, d_lang_langs, d_tkns), (prompted_p_tkns_s, prompted_p_lens, d_ipa_langs_s, d_lang_langs_s, d_tkns_s)
+            )) # (N, Lp, V)
+            
+            # 4 > adapt
+            
+            d2p_logits = logits_aug1
+            d2p_decoder_states = d2p_decoder_states_aug1
                 
-                case _:
-                    raise Absurd
-
             
             # 3 > compute loss
             
@@ -329,11 +259,7 @@ class GreedySampleCringeBackpropThroughout(GreedySampleStrategyBase):
                 # pred_p_emb.shape (N Lp Ep2d)
 
             with torch.no_grad():
-                if not is_transformer:
-                    pred_p_actual_emb = self.p2d.embeddings(pred_p, None)
-                else:
-                    pred_p_actual_emb = self.p2d.ipa_embedding(pred_p) # NOTE this is without positional encoding. need to do positional embedding when injecting into transformer
-                    
+                pred_p_actual_emb = self.p2d.ipa_embedding(pred_p) # NOTE this is without positional encoding. need to do positional embedding when injecting into transformer
 
             # 3 > embedding similarity loss
 
@@ -355,12 +281,8 @@ class GreedySampleCringeBackpropThroughout(GreedySampleStrategyBase):
             # prompted_pred_p_pred_emb_s.shape (N Nd Lp+2 Ep2d)
 
         pred_p_pred_emb_s = repeat(pred_p_pred_emb, f'N Lp Ep2d -> N {Nd} Lp Ep2d')
-        if not is_transformer:
-            prompt_emb_s = self.p2d.embeddings(prompted_p_tkns_s[:,:,0:1], None)
-            bos_emb_s = self.p2d.embeddings(prompted_p_tkns_s[:,:,1:2], None)
-        else:
-            prompt_emb_s = self.p2d.ipa_embedding(prompted_p_tkns_s[:,:,0:1])
-            bos_emb_s = self.p2d.ipa_embedding(prompted_p_tkns_s[:,:,1:2])
+        prompt_emb_s = self.p2d.ipa_embedding(prompted_p_tkns_s[:,:,0:1])
+        bos_emb_s = self.p2d.ipa_embedding(prompted_p_tkns_s[:,:,1:2])
         prompted_pred_p_pred_emb_s = torch.cat((prompt_emb_s, bos_emb_s, pred_p_pred_emb_s), dim=-2)
         
         # endregion
@@ -375,29 +297,15 @@ class GreedySampleCringeBackpropThroughout(GreedySampleStrategyBase):
                 
             # 1 > teacher forcing on p2d
             
-            if not is_transformer:
-                
-                p2d_decode_res_on_gold = self.p2d.teacher_forcing_decode(
-                    source_tokens = rearrange(prompted_p_tkns_s, 'N Nd Lpp -> (N Nd) Lpp'),
-                    source_langs = None, 
-                    source_seqs_lens = rearrange(prompted_p_lens, 'N Nd 1 -> (N Nd) 1'),
-                    target_tokens = rearrange(d_tkns_s, 'N Nd Ld -> (N Nd) Ld'), 
-                    target_langs = rearrange(daughters_lang_langs_dummyized_pad_s, 'N Nd 1 -> (N Nd) 1'), 
-                )
-                p2d_logits_on_gold_us = p2d_decode_res_on_gold['logits']
-
-            else:
-                
-                p2d_logits_on_gold_us, p2d_recon_on_gold_loss, p2d_decoder_on_gold_states = self.p2d.forward_on_batch(
-                    ((d_cat_tkns, d_cat_langs, d_cat_lens, d_indv_lens, p_lang_lang_vec, p_tkns, p_l_tkns, p_fs), (
-                        rearrange(prompted_p_tkns_s, 'N Nd Lpp -> (N Nd) Lpp'), # prompted_p_tkns
-                        rearrange(prompted_p_lens, 'N Nd 1 -> (N Nd) 1'), # prompetd_p_lens
-                        None, # d_ipa_langs # WARN: set to none because transfomer discard them
-                        None, # d_lang_langs # WARN: set to none because transfomer discard them
-                        rearrange(d_tkns_s, 'N Nd Ld -> (N Nd) Ld'), # d_tkn
-                    ), (prompted_p_tkns_s, prompted_p_lens, d_ipa_langs_s, d_lang_langs_s, d_tkns_s))
-                ) # (N, Lp, V)
-                
+            p2d_logits_on_gold_us, p2d_recon_on_gold_loss, p2d_decoder_on_gold_states = self.p2d.forward_on_batch(
+                ((d_cat_tkns, d_cat_langs, d_cat_lens, d_indv_lens, p_lang_lang_vec, p_tkns, p_l_tkns, p_fs), (
+                    rearrange(prompted_p_tkns_s, 'N Nd Lpp -> (N Nd) Lpp'), # prompted_p_tkns
+                    rearrange(prompted_p_lens, 'N Nd 1 -> (N Nd) 1'), # prompetd_p_lens
+                    None, # d_ipa_langs # WARN: set to none because transfomer discard them
+                    None, # d_lang_langs # WARN: set to none because transfomer discard them
+                    rearrange(d_tkns_s, 'N Nd Ld -> (N Nd) Ld'), # d_tkn
+                ), (prompted_p_tkns_s, prompted_p_lens, d_ipa_langs_s, d_lang_langs_s, d_tkns_s))
+            ) # (N, Lp, V)
             # 2 > calc loss and mask
 
             p2d_logits_on_gold_s = rearrange(p2d_logits_on_gold_us, f'(N Nd) Ld V -> N Nd Ld V', N=N, Nd=Nd)
@@ -436,35 +344,20 @@ class GreedySampleCringeBackpropThroughout(GreedySampleStrategyBase):
                 # daughters_seqs_s.shape (N Nd Ld)
                 # prompted_pred_p_pred_emb_s.shape (N Nd Lp+2 Ep2d)
 
-            if not is_transformer:
-
-                p2d_decode_res_on_pred = self.p2d.teacher_forcing_decode(
-                    source_tokens = torch.zeros_like(rearrange(prompted_p_tkns_s, 'N Nd Lpp -> (N Nd) Lpp')), # doesn't matter
-                    source_langs = None, # doesn't matter
-                    source_seqs_lens = rearrange(prompted_p_lens, 'N Nd 1 -> (N Nd) 1'),
-                    target_tokens = rearrange(d_tkns_s, 'N Nd Ld -> (N Nd) Ld'), 
-                    target_langs = rearrange(daughters_lang_langs_dummyized_pad_s, 'N Nd 1 -> (N Nd) 1'), 
-                    inject_embedding = rearrange(prompted_pred_p_pred_emb_s, 'N Nd Lpp Ep2d -> (N Nd) Lpp Ep2d'),
-                )
-                p2d_logits_on_pred_us = p2d_decode_res_on_pred['logits']
-            
-            else:
-
-                embedding_injection = self.p2d.pos_encoding(
-                    rearrange(prompted_pred_p_pred_emb_s, 'N Nd Lpp Ep2d -> (N Nd) Lpp Ep2d'),
-                    (torch.ones(N * Nd, 1) * Lp+2).long()
-                )
-                p2d_logits_on_pred_us, p2d_recon_on_pred_loss, p2d_decoder_on_pred_states = self.p2d.forward_on_batch(
-                    ((d_cat_tkns, d_cat_langs, d_cat_lens, d_indv_lens, p_lang_lang_vec, p_tkns, p_l_tkns, p_fs), (
-                        torch.zeros_like(rearrange(prompted_p_tkns_s, 'N Nd Lpp -> (N Nd) Lpp')), # prompted_p_tkns, doesn't matter
-                        rearrange(prompted_p_lens, 'N Nd 1 -> (N Nd) 1'), # prompetd_p_lens
-                        None, # d_ipa_langs # WARN: set to none because transfomer discard them
-                        None, # d_lang_langs # WARN: set to none because transfomer discard them
-                        rearrange(d_tkns_s, 'N Nd Ld -> (N Nd) Ld'), # d_tkn
-                    ), (prompted_p_tkns_s, prompted_p_lens, d_ipa_langs_s, d_lang_langs_s, d_tkns_s)),
-                    inject_embedding = embedding_injection,
-                ) # (N, Lp, V)
-
+            embedding_injection = self.p2d.pos_encoding(
+                rearrange(prompted_pred_p_pred_emb_s, 'N Nd Lpp Ep2d -> (N Nd) Lpp Ep2d'),
+                (torch.ones(N * Nd, 1) * Lp+2).long()
+            )
+            p2d_logits_on_pred_us, p2d_recon_on_pred_loss, p2d_decoder_on_pred_states = self.p2d.forward_on_batch(
+                ((d_cat_tkns, d_cat_langs, d_cat_lens, d_indv_lens, p_lang_lang_vec, p_tkns, p_l_tkns, p_fs), (
+                    torch.zeros_like(rearrange(prompted_p_tkns_s, 'N Nd Lpp -> (N Nd) Lpp')), # prompted_p_tkns, doesn't matter
+                    rearrange(prompted_p_lens, 'N Nd 1 -> (N Nd) 1'), # prompetd_p_lens
+                    None, # d_ipa_langs # WARN: set to none because transfomer discard them
+                    None, # d_lang_langs # WARN: set to none because transfomer discard them
+                    rearrange(d_tkns_s, 'N Nd Ld -> (N Nd) Ld'), # d_tkn
+                ), (prompted_p_tkns_s, prompted_p_lens, d_ipa_langs_s, d_lang_langs_s, d_tkns_s)),
+                inject_embedding = embedding_injection,
+            ) # (N, Lp, V)
             # 2 > calc loss and mask
             
                 # p2d_logits_us ((N Nd) Ld V)
@@ -670,16 +563,16 @@ class GreedySampleCringeBackpropThroughout(GreedySampleStrategyBase):
             
         return res_dict
 
-    def on_validation_epoch_end(strat, self: biDirReconModel):
+    def on_validation_epoch_end(strat, self: biDirReconModelTrans):
         return strat.shared_eval_epoch_end(self, 'val')
     
-    def on_test_epoch_end(strat, self: biDirReconModel):
+    def on_test_epoch_end(strat, self: biDirReconModelTrans):
         if self.transductive_test:
             return strat.shared_eval_epoch_end(self, 'transductive')
         else:
             return strat.shared_eval_epoch_end(self, 'test')
 
-    def shared_eval_epoch_end(strat, self: biDirReconModel, prefix: str) -> dict | None:
+    def shared_eval_epoch_end(strat, self: biDirReconModelTrans, prefix: str) -> dict | None:
           
         # 1 > crunch val steps data
         

@@ -1,4 +1,4 @@
-from specialtokens import *
+from ..specialtokens import *
 
 import pickle
 

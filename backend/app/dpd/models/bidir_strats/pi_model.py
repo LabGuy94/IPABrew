@@ -1,15 +1,14 @@
 from __future__ import annotations
 from typing import Annotated
 from typing import TYPE_CHECKING
-from models.biDirReconIntegration import biDirReconModelRNN, biDirReconModelTrans
-from models.bidir_strats.base import *
+from ..biDirReconIntegration import biDirReconModelTrans
+from .base import *
 import wandb
 from copy import copy
 import random
 from torch import Tensor
 import numpy as np
 
-someBiDirModel = biDirReconModelRNN | biDirReconModelTrans
 
 from .consistency_regularisation_lib import sigmoid_rampup, augment, mse_consistency_loss, kl_consistency_loss
 
@@ -40,33 +39,21 @@ class PiModelD2P(BidirTrainStrategyBase):
             case _:
                 raise ValueError(f"Unknown consistency type: {strat.consistency_type}")
     
-    def extra_init(strat, self: someBiDirModel):
-        match self:
-            case biDirReconModelRNN():
-                assert self.d2p.use_vae_latent == False # no vae support here
-            case biDirReconModelTrans():
-                pass
-            
+    def extra_init(strat, self: biDirReconModelTrans):
         self.logger_prefix = 'd2p_pi_model'
 
     def get_current_consistency_weight(strat, epoch):
         # Consistency ramp-up from https://arxiv.org/abs/1610.02242, implemented by athiwaratkunThereAreMany2019
         return strat.max_consistency_scaling * strat.proportion_labelled * sigmoid_rampup(epoch, strat.consistency_rampup_length)
 
-    def training_step(strat, self: someBiDirModel, batch: batch_t, batch_idx: int) -> Tensor:
+    def training_step(strat, self: biDirReconModelTrans, batch: batch_t, batch_idx: int) -> Tensor:
         (d_cat_tkns, d_cat_langs, d_cat_lens, d_indv_lens, p_lang_lang_vec, p_tkns, p_l_tkns, p_fs), (prompted_p_tkns, prompetd_p_lens, d_ipa_langs, d_lang_langs, d_tkns), (prompted_p_tkns_s, prompted_p_lens, d_ipa_langs_s, d_lang_langs_s, d_tkns_s) = batch
 
         # 0 > prep
 
         N = d_cat_tkns.shape[0]
         
-        match self:
-            case biDirReconModelRNN():
-                d2p_target_langs = p_lang_lang_vec if self.d2p.lang_embedding_when_decoder else None
-                transformer_d2p_d_cat_style=False
-            case biDirReconModelTrans():
-                transformer_d2p_d_cat_style=True
-        
+        transformer_d2p_d_cat_style=True
         # 1 > augment
         
         d_cat_tkns_aug1, d_cat_langs_aug1, d_cat_lens_aug1, d_indv_lens_aug1 = augment(d_cat_tkns, d_cat_langs, d_cat_lens, d_indv_lens, transformer_d2p_d_cat_style=transformer_d2p_d_cat_style)
@@ -74,31 +61,12 @@ class PiModelD2P(BidirTrainStrategyBase):
         
         # 2 > forward on both
         
-        match self:
-            case biDirReconModelRNN():
-                logits_aug1, _, _, _ = self.d2p.forward_on_batch((
-                    (d_cat_tkns_aug1, d_cat_langs_aug1, d_cat_lens_aug1, d_indv_lens_aug1, d2p_target_langs, p_tkns, p_l_tkns, p_fs), (prompted_p_tkns, prompetd_p_lens, d_ipa_langs, d_lang_langs, d_tkns), (prompted_p_tkns_s, prompted_p_lens, d_ipa_langs_s, d_lang_langs_s, d_tkns_s)
-                )) # (N, Lp, V)
-                logits_aug2, _, _, _ = self.d2p.forward_on_batch((
-                    (d_cat_tkns_aug2, d_cat_langs_aug2, d_cat_lens_aug2, d_indv_lens_aug2, d2p_target_langs, p_tkns, p_l_tkns, p_fs), (prompted_p_tkns, prompetd_p_lens, d_ipa_langs, d_lang_langs, d_tkns), (prompted_p_tkns_s, prompted_p_lens, d_ipa_langs_s, d_lang_langs_s, d_tkns_s)
-                )) # (N, Lp, V)
-
-                # decode_res_aug1 = self.d2p.teacher_forcing_decode(d_cat_tkns_aug1, d_cat_langs_aug1, d_cat_lens_aug1, p_tkns, d2p_target_langs)
-                # logits_aug1 = decode_res_aug1['logits'] 
-
-                # decode_res_aug2 = self.d2p.teacher_forcing_decode(d_cat_tkns_aug2, d_cat_langs_aug2, d_cat_lens_aug2, p_tkns, d2p_target_langs)
-                # logits_aug2 = decode_res_aug2['logits'] # (N, Lp, V)
-
-            case biDirReconModelTrans():
-                logits_aug1, _loss, _decoder_out = self.d2p.forward_on_batch((
-                    (d_cat_tkns_aug1, d_cat_langs_aug1, d_cat_lens_aug1, d_indv_lens_aug1, p_lang_lang_vec, p_tkns, p_l_tkns, p_fs), (prompted_p_tkns, prompetd_p_lens, d_ipa_langs, d_lang_langs, d_tkns), (prompted_p_tkns_s, prompted_p_lens, d_ipa_langs_s, d_lang_langs_s, d_tkns_s)
-                )) # (N, Lp, V)
-                logits_aug2, _loss, _decoder_out = self.d2p.forward_on_batch((
-                    (d_cat_tkns_aug2, d_cat_langs_aug2, d_cat_lens_aug2, d_indv_lens_aug2, p_lang_lang_vec, p_tkns, p_l_tkns, p_fs), (prompted_p_tkns, prompetd_p_lens, d_ipa_langs, d_lang_langs, d_tkns), (prompted_p_tkns_s, prompted_p_lens, d_ipa_langs_s, d_lang_langs_s, d_tkns_s)
-                )) # (N, Lp, V)
-            
-            case _:
-                raise Absurd
+        logits_aug1, _loss, _decoder_out = self.d2p.forward_on_batch((
+            (d_cat_tkns_aug1, d_cat_langs_aug1, d_cat_lens_aug1, d_indv_lens_aug1, p_lang_lang_vec, p_tkns, p_l_tkns, p_fs), (prompted_p_tkns, prompetd_p_lens, d_ipa_langs, d_lang_langs, d_tkns), (prompted_p_tkns_s, prompted_p_lens, d_ipa_langs_s, d_lang_langs_s, d_tkns_s)
+        )) # (N, Lp, V)
+        logits_aug2, _loss, _decoder_out = self.d2p.forward_on_batch((
+            (d_cat_tkns_aug2, d_cat_langs_aug2, d_cat_lens_aug2, d_indv_lens_aug2, p_lang_lang_vec, p_tkns, p_l_tkns, p_fs), (prompted_p_tkns, prompetd_p_lens, d_ipa_langs, d_lang_langs, d_tkns), (prompted_p_tkns_s, prompted_p_lens, d_ipa_langs_s, d_lang_langs_s, d_tkns_s)
+        )) # (N, Lp, V)
         
         # 3 > compute loss
         
@@ -124,25 +92,25 @@ class PiModelD2P(BidirTrainStrategyBase):
         
         return loss
     
-    def on_train_epoch_end(strat, self: someBiDirModel) -> dict | None:
+    def on_train_epoch_end(strat, self: biDirReconModelTrans) -> dict | None:
         return
     
-    def validation_step(strat, self: someBiDirModel, batch: batch_t, batch_idx: int) -> Tensor:
+    def validation_step(strat, self: biDirReconModelTrans, batch: batch_t, batch_idx: int) -> Tensor:
         return
     
-    def test_step(strat, self: someBiDirModel, batch: batch_t, batch_idx: int) -> Tensor:
+    def test_step(strat, self: biDirReconModelTrans, batch: batch_t, batch_idx: int) -> Tensor:
         return
 
-    def on_validation_epoch_end(strat, self: someBiDirModel):
+    def on_validation_epoch_end(strat, self: biDirReconModelTrans):
         return strat.shared_eval_epoch_end(self, 'val')
     
-    def on_test_epoch_end(strat, self: someBiDirModel):
+    def on_test_epoch_end(strat, self: biDirReconModelTrans):
         if self.transductive_test:
             return strat.shared_eval_epoch_end(self, 'transductive')
         else:
             return strat.shared_eval_epoch_end(self, 'test')
 
-    def shared_eval_epoch_end(strat, self: someBiDirModel, prefix: str) -> dict | None:
+    def shared_eval_epoch_end(strat, self: biDirReconModelTrans, prefix: str) -> dict | None:
           
         # run d2p's eval routine
         

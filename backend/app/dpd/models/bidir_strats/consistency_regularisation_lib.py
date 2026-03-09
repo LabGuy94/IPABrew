@@ -6,7 +6,7 @@ import torch
 from torch import Tensor
 import numpy as np
 from torch.nn.utils.rnn import pad_sequence
-from prelude import *
+from ...prelude import *
 import torch.nn.functional as F
 
 def sigmoid_rampup(current, rampup_length) -> float:

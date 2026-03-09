@@ -1,3 +1,7 @@
+import logging
+
+logger = logging.getLogger(__name__)
+
 import panphon
 import panphon.distance
 
@@ -32,7 +36,10 @@ def weighted_feature_edit_distance(word1, word2):
 
 def normalized_edit_distance(word1, word2):
     fed = feature_edit_distance(word1, word2)
-    max_len = max(len(word1), len(word2))
+    ft = _get_feature_table()
+    seg_count1 = len(ft.segs_safe(word1))
+    seg_count2 = len(ft.segs_safe(word2))
+    max_len = max(seg_count1, seg_count2)
     if max_len == 0:
         return 0.0
     return fed / max_len
@@ -47,6 +54,7 @@ def get_features(word):
             for seg, fv in zip(word, fts)
         ]
     except Exception:
+        logger.debug("Failed to get features for '%s'", word, exc_info=True)
         return []
 
 

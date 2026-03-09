@@ -9,6 +9,14 @@ async function apiPost(endpoint, body) {
     return resp.json();
 }
 
+function showError(container, message) {
+    container.innerHTML = '';
+    const div = document.createElement('div');
+    div.className = 'error-message';
+    div.textContent = message;
+    container.appendChild(div);
+}
+
 // ─── Tree Editor State ───
 
 let branchCounter = 0;
@@ -472,7 +480,7 @@ document.getElementById('btn-reconstruct').addEventListener('click', async () =>
         panel.style.display = 'block';
         panel.offsetHeight;
         layout.classList.add('has-results');
-        panel.innerHTML = `<div class="error-message">Error: ${e.message}</div>`;
+        showError(panel, 'Error: ' + e.message);
     } finally {
         btn.disabled = false;
         btn.textContent = 'Reconstruct';
@@ -490,7 +498,7 @@ document.getElementById('method-select').addEventListener('change', async () => 
         displayResults(result);
     } catch (e) {
         const panel = document.getElementById('results-panel');
-        panel.innerHTML = `<div class="error-message">Error: ${e.message}</div>`;
+        showError(panel, 'Error: ' + e.message);
     } finally {
         btn.disabled = false;
         btn.textContent = 'Reconstruct';
@@ -511,7 +519,7 @@ function displayResults(result) {
 
     if (result.error) {
         document.getElementById('proto-form-display').textContent = '';
-        document.getElementById('tree-container').innerHTML = `<div class="error-message">${result.error}</div>`;
+        showError(document.getElementById('tree-container'), result.error);
         document.getElementById('similarity-matrix').innerHTML = '';
         document.getElementById('ages-display').innerHTML = '';
         return;

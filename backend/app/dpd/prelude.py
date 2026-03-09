@@ -1,7 +1,7 @@
 import torch
 from einops import rearrange, repeat
 import pytorch_lightning as pl
-from specialtokens import *
+from .specialtokens import *
 import torch.nn as nn
 from pytorch_lightning.loggers import WandbLogger
 import itertools

@@ -3,13 +3,13 @@
 import torch
 from torch import Tensor
 from tqdm import tqdm
-from specialtokens import *
-from prelude import ALL_TARGET_LANGS_LABEL
+from ..specialtokens import *
+from ..prelude import ALL_TARGET_LANGS_LABEL
 import panphon.distance
 import lingrex.reconstruct
 import numpy as np
 from pytorch_lightning.utilities.exceptions import MisconfigurationException
-from prelude import batch_t
+from ..prelude import batch_t
 from torch import nn
 from einops import repeat, rearrange
 

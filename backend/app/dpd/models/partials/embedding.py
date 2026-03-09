@@ -3,7 +3,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 from typing import Tuple
 from torch import Tensor
-from specialtokens import *
+from ...specialtokens import *
 
 class Embedding(nn.Module):
     def __init__(self, embedding_dim, num_ipa_tokens, num_langs):

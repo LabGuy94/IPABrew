@@ -10,6 +10,7 @@ panphon>=0.22,<1.0
 
 # Data
 pandas>=2.0,<4.0
+pyyaml>=6.0
 
 # ML model (DPD neural reconstruction)
 torch>=2.0
@@ -22,3 +23,7 @@ scipy
 regex
 transformers
 torchshow
+
+
+# Testing
+pytest>=7.0
