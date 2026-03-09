@@ -239,7 +239,6 @@ def _parse_ipa_batch(raw_ipa):
         return []
     return [part.strip() for part in text.split(",") if part.strip()]
 
-            ...
 
 def _node_display_label(node):
     label = (node.get("label") or "").strip()
