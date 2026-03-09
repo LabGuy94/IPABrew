@@ -167,16 +167,34 @@ document.getElementById('btn-add-intermediate').addEventListener('click', () => 
     addIntermediate();
 });
 
-document.getElementById('btn-clear').addEventListener('click', () => {
-    showConfirmToast('Clear the entire tree? This cannot be undone.', () => {
-        initTree();
-        lastTreePayload = null;
-        lastReconstructResult = null;
-        document.getElementById('root-label').value = 'Proto-Language';
-        document.getElementById('results-panel').style.display = 'none';
-        document.querySelector('.app-layout').classList.remove('has-results');
+(function() {
+    const btn = document.getElementById('btn-clear');
+    let armed = false;
+    let timer = null;
+    btn.addEventListener('click', () => {
+        if (!armed) {
+            armed = true;
+            btn.textContent = 'Sure?';
+            btn.classList.add('btn-confirm-armed');
+            timer = setTimeout(() => {
+                armed = false;
+                btn.textContent = 'Clear';
+                btn.classList.remove('btn-confirm-armed');
+            }, 2000);
+        } else {
+            clearTimeout(timer);
+            armed = false;
+            btn.textContent = 'Clear';
+            btn.classList.remove('btn-confirm-armed');
+            initTree();
+            lastTreePayload = null;
+            lastReconstructResult = null;
+            document.getElementById('root-label').value = 'Proto-Language';
+            document.getElementById('results-panel').style.display = 'none';
+            document.querySelector('.app-layout').classList.remove('has-results');
+        }
     });
-});
+})();
 
 // ─── Demo Data ───
 
@@ -448,9 +466,7 @@ function buildDemoMenu() {
         btn.addEventListener('click', () => {
             const fam = btn.dataset.family;
             const idx = parseInt(btn.dataset.index);
-            showConfirmToast('Load demo? This will replace your current tree.', () => {
-                loadDemo(DEMOS[fam][idx]);
-            });
+            loadDemo(DEMOS[fam][idx]);
         });
     });
 }
@@ -1031,10 +1047,6 @@ function renderIPATab() {
 
     const sections = showAll ? [...data.common, ...(data.extended || [])] : data.common;
 
-    html += '<div class="ipa-kb-section-label">Utilities</div>';
-    html += '<button type="button" class="ipa-kb-key ipa-kb-util" data-action="backspace" title="Backspace">⌫ Bksp</button>';
-    html += '<button type="button" class="ipa-kb-key ipa-kb-util" data-action="space" title="Space">␣ Space</button>';
-
     for (const section of sections) {
         html += `<div class="ipa-kb-section-label">${section.label}</div>`;
         for (const [sym, desc] of section.symbols) {
@@ -1070,23 +1082,7 @@ document.getElementById('ipa-kb-body').addEventListener('click', (e) => {
     const key = e.target.closest('.ipa-kb-key');
     if (!key || !ipaActiveInput) return;
 
-    const action = key.dataset.action;
-    if (action === 'backspace') {
-        const start = ipaActiveInput.selectionStart;
-        const end = ipaActiveInput.selectionEnd;
-        if (start === end && start > 0) {
-            ipaActiveInput.value = ipaActiveInput.value.substring(0, start - 1) + ipaActiveInput.value.substring(end);
-            ipaActiveInput.setSelectionRange(start - 1, start - 1);
-        } else if (start !== end) {
-            ipaActiveInput.value = ipaActiveInput.value.substring(0, start) + ipaActiveInput.value.substring(end);
-            ipaActiveInput.setSelectionRange(start, start);
-        }
-        ipaActiveInput.focus();
-    } else if (action === 'space') {
-        insertAtCursor(ipaActiveInput, ' ');
-    } else {
-        insertAtCursor(ipaActiveInput, key.dataset.char);
-    }
+    insertAtCursor(ipaActiveInput, key.dataset.char);
 });
 
 // Show all toggle

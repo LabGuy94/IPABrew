@@ -282,6 +282,7 @@ main {
     display: flex;
     gap: 10px;
     flex-wrap: wrap;
+    align-items: stretch;
 }
 
 .btn {
@@ -319,10 +320,14 @@ main {
     background: var(--border-light);
 }
 
+.btn-confirm-armed {
+    background: var(--primary);
+    color: #faf7f2;
+    border-color: var(--primary);
+}
+
 .btn-reconstruct-main {
     flex: 1;
-    font-size: 0.95rem;
-    padding: 10px 22px;
 }
 
 .btn-add-branch {
@@ -945,9 +950,10 @@ body.ipa-kb-open main {
     border-radius: var(--radius);
     font-size: 0.85rem;
     font-family: var(--font-serif);
-    color: #faf7f2;
-    background: var(--primary);
-    box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+    color: var(--text);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    box-shadow: none;
     opacity: 0;
     transform: translateX(30px);
     transition: opacity 0.3s, transform 0.3s;
@@ -960,15 +966,17 @@ body.ipa-kb-open main {
 }
 
 .toast.toast-error {
-    background: var(--error);
+    border-color: var(--primary);
+    color: var(--primary);
 }
 
 .toast.toast-info {
-    background: var(--inter-color);
+    border-color: var(--inter-color);
+    color: var(--inter-color);
 }
 
 .toast.toast-confirm {
-    background: #3b3228;
+    border-color: var(--primary);
     display: flex;
     align-items: center;
     gap: 12px;
@@ -986,30 +994,28 @@ body.ipa-kb-open main {
 }
 
 .toast-confirm-btn {
-    border: none;
-    border-radius: 4px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
     padding: 4px 12px;
     font-size: 0.85rem;
     cursor: pointer;
     font-family: inherit;
+    background: var(--surface-hover);
+    color: var(--text);
 }
 
 .toast-confirm-yes {
-    background: var(--error);
-    color: #fff;
+    background: var(--primary);
+    border-color: var(--primary);
+    color: #faf7f2;
 }
 
 .toast-confirm-yes:hover {
     opacity: 0.9;
 }
 
-.toast-confirm-no {
-    background: rgba(255, 255, 255, 0.2);
-    color: #fff;
-}
-
 .toast-confirm-no:hover {
-    background: rgba(255, 255, 255, 0.35);
+    background: var(--border-light);
 }
 
 /* Scrollable similarity matrix */
@@ -1053,12 +1059,4 @@ body.ipa-kb-open main {
 .btn-export:hover {
     border-color: var(--primary);
     color: var(--primary);
-}
-
-/* IPA keyboard utility keys */
-.ipa-kb-key.ipa-kb-util {
-    background: var(--surface-hover);
-    border-color: var(--border);
-    font-size: 0.7rem;
-    min-width: 48px;
 }
