@@ -233,31 +233,65 @@ def _build_convergence_tree(words, labels, proto_form, aligned):
     return tree
 
 
-def reconstruct_tree(tree, method="ml"):
-    """Reconstruct a tree bottom-up.
+def _parse_ipa_batch(raw_ipa):
+    text = str(raw_ipa or "").strip()
+    if not text:
+        return []
+    return [part.strip() for part in text.split(",") if part.strip()]
 
-    Tree format:
-    {
-        "label": "Proto-Language",
-        "children": [
-            {
-                "label": "Branch A",
-                "ipa": "",          # empty => reconstruct from descendants
-                "children": [
-                    {"label": "French", "ipa": "pɛːr"},
-                    {"label": "Italian", "ipa": "padre"}
-                ]
-            },
             ...
-        ]
-    }
 
-    Returns the tree with all missing ipa fields filled in via reconstruction,
-    plus alignment/distance metadata.
-    """
-    if not tree or "children" not in tree or len(tree.get("children", [])) < 1:
-        return {"error": "Tree must have at least one intermediate child"}
+def _node_display_label(node):
+    label = (node.get("label") or "").strip()
+    if label:
+        return label
+    if node.get("_is_root"):
+        return "root"
+    if node.get("children"):
+        return "branch"
+    return "descendant"
 
+
+def _collect_tree_batch_sizes(node, sizes):
+    ipa_values = _parse_ipa_batch(node.get("ipa", ""))
+    if ipa_values:
+        sizes.append((_node_display_label(node), len(ipa_values)))
+
+    for child in node.get("children", []):
+        _collect_tree_batch_sizes(child, sizes)
+
+
+def _get_tree_batch_size(tree):
+    sizes = []
+    _collect_tree_batch_sizes(tree, sizes)
+    if not sizes:
+        return 1, None
+
+    expected_size = sizes[0][1]
+    mismatches = [(label, size) for label, size in sizes if size != expected_size]
+    if not mismatches:
+        return expected_size, None
+
+    mismatch_text = ", ".join(f"{label}={size}" for label, size in mismatches)
+    return None, (
+        "All populated IPA inputs must contain the same number of comma-separated forms; "
+        f"expected {expected_size}, got {mismatch_text}"
+    )
+
+
+def _expand_tree_for_batch(node, batch_index):
+    expanded = {key: value for key, value in node.items() if key != "children"}
+    ipa_values = _parse_ipa_batch(node.get("ipa", ""))
+    expanded["ipa"] = ipa_values[batch_index] if ipa_values else ""
+
+    children = node.get("children", [])
+    if children:
+        expanded["children"] = [_expand_tree_for_batch(child, batch_index) for child in children]
+
+    return expanded
+
+
+def _reconstruct_single_tree(tree, method="ml"):
     if method == "ml" and dpd_service.is_available():
         result_tree = _reconstruct_node(tree, _reconstruct_ml)
         actual_method = "ml"
@@ -267,19 +301,45 @@ def reconstruct_tree(tree, method="ml"):
     if "error" in result_tree:
         return result_tree
 
-    # Build similarity matrix from leaves
     leaves = _collect_leaves(result_tree)
     labels = [l["label"] for l in leaves]
     ipas = [l["ipa"] for l in leaves]
     matrix = _build_similarity_matrix(labels, ipas)
 
-    # Compute RCI-based age estimates in years for all internal nodes
     _compute_ages_in_years(result_tree)
 
     return {
         "tree": result_tree,
         "similarity_matrix": matrix,
         "method_used": actual_method,
+    }
+
+
+def reconstruct_tree(tree, method="ml"):
+    """Reconstruct one or more trees from comma-separated IPA input batches."""
+    if not tree or "children" not in tree or len(tree.get("children", [])) < 1:
+        return {"error": "Tree must have at least one intermediate child"}
+
+    batch_size, error = _get_tree_batch_size(tree)
+    if error:
+        return {"error": error}
+
+    results = []
+    for batch_index in range(batch_size):
+        batch_tree = _expand_tree_for_batch(tree, batch_index)
+        result = _reconstruct_single_tree(batch_tree, method=method)
+        if "error" in result:
+            if batch_size == 1:
+                return result
+            return {"error": f"Batch item {batch_index + 1}: {result['error']}"}
+
+        result["batch_index"] = batch_index
+        results.append(result)
+
+    return {
+        "count": batch_size,
+        "batched": batch_size > 1,
+        "results": results,
     }
 
 

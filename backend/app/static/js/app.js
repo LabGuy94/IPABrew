@@ -63,6 +63,8 @@ function showConfirmToast(message, onConfirm) {
 }
 
 let lastReconstructResult = null;
+let activeBatchIndex = 0;
+let selectedMethod = 'ml';
 
 // ─── Tree Editor State ───
 
@@ -75,7 +77,7 @@ function createDescendantHTML(lang = '', ipa = '') {
         <div class="te-descendant" data-id="${id}">
             <span class="te-badge desc-badge">Leaf</span>
             <input type="text" class="te-label-input te-desc-label" value="${lang}" placeholder="Language name">
-            <input type="text" class="te-ipa-input te-desc-ipa" value="${ipa}" placeholder="IPA (required)">
+            <input type="text" class="te-ipa-input te-desc-ipa" value="${ipa}" placeholder="IPA (required, commas for batch)">
             <button type="button" class="ipa-field-toggle" title="IPA Keyboard">⌨</button>
             <button class="btn-remove" title="Remove descendant">&times;</button>
         </div>
@@ -102,7 +104,7 @@ function createIntermediateHTML(label = '', ipa = '', descendants = []) {
             <div class="te-node-header intermediate-header">
                 <span class="te-badge inter-badge">Branch</span>
                 <input type="text" class="te-label-input te-inter-label" value="${descLabel}" placeholder="Branch label">
-                <input type="text" class="te-ipa-input te-inter-ipa" value="${ipa}" placeholder="IPA (optional, leave empty to reconstruct)">
+                <input type="text" class="te-ipa-input te-inter-ipa" value="${ipa}" placeholder="IPA (optional, commas for batch)">
                 <button type="button" class="ipa-field-toggle" title="IPA Keyboard">⌨</button>
                 <button class="btn-remove btn-remove-branch" title="Remove branch">&times;</button>
             </div>
@@ -189,6 +191,8 @@ document.getElementById('btn-add-intermediate').addEventListener('click', () => 
             initTree();
             lastTreePayload = null;
             lastReconstructResult = null;
+            activeBatchIndex = 0;
+            clearBatchSelector();
             document.getElementById('root-label').value = 'Proto-Language';
             document.getElementById('results-panel').style.display = 'none';
             document.querySelector('.app-layout').classList.remove('has-results');
@@ -438,6 +442,85 @@ const DEMOS = {
     ],
 };
 
+const METHOD_OPTIONS = [
+    { value: 'ml', label: 'Machine Learning (DPD)' },
+    { value: 'algorithm', label: 'Algorithm (LingPy)' },
+];
+
+function getMethodLabel(method) {
+    const option = METHOD_OPTIONS.find(entry => entry.value === method);
+    return option ? option.label : method;
+}
+
+function closePickerMenus(exceptMenuId = null) {
+    document.querySelectorAll('.picker-menu, .demo-menu').forEach(menu => {
+        if (menu.id !== exceptMenuId) menu.style.display = 'none';
+    });
+}
+
+function togglePickerMenu(menuId) {
+    const menu = document.getElementById(menuId);
+    const visible = menu.style.display !== 'none';
+    if (visible) {
+        menu.style.display = 'none';
+        return;
+    }
+
+    closePickerMenus(menuId);
+    menu.style.display = 'block';
+}
+
+function renderPickerMenu(menuId, groups) {
+    const menu = document.getElementById(menuId);
+    const actions = new Map();
+    let html = '';
+
+    groups.forEach((group, groupIndex) => {
+        html += '<div class="picker-group">';
+        if (group.label) html += `<div class="picker-group-label">${group.label}</div>`;
+
+        group.items.forEach((item, itemIndex) => {
+            const key = `${groupIndex}-${itemIndex}`;
+            actions.set(key, item.onSelect);
+            html += `<button class="picker-item${item.active ? ' active' : ''}" data-key="${key}">${item.label}</button>`;
+        });
+
+        html += '</div>';
+    });
+
+    menu.innerHTML = html;
+    menu.querySelectorAll('.picker-item').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const action = actions.get(btn.dataset.key);
+            if (action) action();
+        });
+    });
+}
+
+function updateMethodPickerButton() {
+    document.getElementById('btn-method-picker').textContent = `Method: ${getMethodLabel(selectedMethod)} ▾`;
+}
+
+function renderMethodMenu() {
+    renderPickerMenu('method-menu', [{
+        label: null,
+        items: METHOD_OPTIONS.map(option => ({
+            label: option.label,
+            active: option.value === selectedMethod,
+            onSelect: async () => {
+                const changed = selectedMethod !== option.value;
+                selectedMethod = option.value;
+                updateMethodPickerButton();
+                renderMethodMenu();
+                closePickerMenus();
+                if (changed && lastTreePayload && document.querySelector('.app-layout').classList.contains('has-results')) {
+                    await runReconstructionWithCurrentMethod(true);
+                }
+            },
+        })),
+    }]);
+}
+
 function loadDemo(demo) {
     document.getElementById('root-label').value = demo.root;
     const container = document.getElementById('intermediates-container');
@@ -446,47 +529,71 @@ function loadDemo(demo) {
     demo.branches.forEach(b => {
         addIntermediate(b.label, b.ipa, b.descendants);
     });
-    // Close menu
-    document.getElementById('demo-menu').style.display = 'none';
+    closePickerMenus();
 }
 
 function buildDemoMenu() {
-    const menu = document.getElementById('demo-menu');
-    let html = '';
-    for (const [family, demos] of Object.entries(DEMOS)) {
-        html += `<div class="demo-group">`;
-        html += `<div class="demo-group-label">${family}</div>`;
-        demos.forEach((d, i) => {
-            html += `<button class="demo-item" data-family="${family}" data-index="${i}">${d.name}</button>`;
-        });
-        html += `</div>`;
-    }
-    menu.innerHTML = html;
-    menu.querySelectorAll('.demo-item').forEach(btn => {
-        btn.addEventListener('click', () => {
-            const fam = btn.dataset.family;
-            const idx = parseInt(btn.dataset.index);
-            loadDemo(DEMOS[fam][idx]);
-        });
+    renderPickerMenu('demo-menu', Object.entries(DEMOS).map(([family, demos]) => ({
+        label: family,
+        items: demos.map(demo => ({
+            label: demo.name,
+            onSelect: () => loadDemo(demo),
+        })),
+    })));
+}
+
+function bindPickerToggle(buttonId, menuId) {
+    document.getElementById(buttonId).addEventListener('click', (e) => {
+        e.stopPropagation();
+        togglePickerMenu(menuId);
     });
 }
 
-document.getElementById('btn-load-demo').addEventListener('click', (e) => {
-    e.stopPropagation();
-    const menu = document.getElementById('demo-menu');
-    const visible = menu.style.display !== 'none';
-    menu.style.display = visible ? 'none' : 'block';
-});
-
-// Close menu when clicking outside
 document.addEventListener('click', (e) => {
-    const wrap = document.querySelector('.demo-picker-wrap');
-    if (wrap && !wrap.contains(e.target)) {
-        document.getElementById('demo-menu').style.display = 'none';
-    }
+    if (!e.target.closest('.picker-wrap')) closePickerMenus();
 });
 
+bindPickerToggle('btn-load-demo', 'demo-menu');
+bindPickerToggle('btn-method-picker', 'method-menu');
+bindPickerToggle('btn-batch-picker', 'batch-menu');
 buildDemoMenu();
+updateMethodPickerButton();
+renderMethodMenu();
+
+function parseIpaBatch(rawValue) {
+    const text = String(rawValue || '').trim();
+    if (!text) return [];
+
+    return text
+        .split(/\s*,\s*/)
+.map(part => part.trim())
+        .filter(part => part.length > 0);
+}
+
+function collectTreeBatchSizes(node, sizes = []) {
+    const ipaValues = parseIpaBatch(node.ipa);
+    if (ipaValues.length > 0) {
+        sizes.push({
+            label: node.label || 'Unnamed node',
+            count: ipaValues.length,
+        });
+    }
+
+    (node.children || []).forEach(child => collectTreeBatchSizes(child, sizes));
+    return sizes;
+}
+
+function getTreeBatchValidationError(tree) {
+    const sizes = collectTreeBatchSizes(tree);
+    if (sizes.length === 0) return null;
+
+    const expected = sizes[0].count;
+    const mismatch = sizes.find(entry => entry.count !== expected);
+    if (!mismatch) return null;
+
+    return `All populated IPA inputs must contain the same number of comma-separated forms. Expected ${expected}, but "${mismatch.label}" has ${mismatch.count}.`;
+}
+
 
 // ─── Build tree from editor ───
 
@@ -521,93 +628,135 @@ function buildTreeFromEditor() {
 
 // ─── Reconstruct ───
 
+async function runReconstructionWithCurrentMethod(preserveBatchIndex) {
+    if (!lastTreePayload) return;
+
+    const btn = document.getElementById('btn-reconstruct');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="loading"></span>Reconstructing...';
+
+    try {
+        const result = await apiPost('/reconstruct_tree', { tree: lastTreePayload, method: selectedMethod });
+        displayResults(result, selectedMethod, preserveBatchIndex);
+    } catch (e) {
+        displayResults({ error: 'Error: ' + e.message }, selectedMethod, preserveBatchIndex);
+    } finally {
+        btn.disabled = false;
+        btn.textContent = 'Reconstruct';
+    }
+}
+
 document.getElementById('btn-reconstruct').addEventListener('click', async () => {
     const tree = buildTreeFromEditor();
 
     for (const branch of tree.children) {
         for (const desc of branch.children) {
-            if (!desc.ipa) {
+            if (parseIpaBatch(desc.ipa).length === 0) {
                 showToast(`Descendant "${desc.label}" is missing IPA input.`);
                 return;
             }
         }
     }
 
-    const btn = document.getElementById('btn-reconstruct');
-    btn.disabled = true;
-    btn.innerHTML = '<span class="loading"></span>Reconstructing...';
-
-    try {
-        const method = document.getElementById('method-select').value;
-        lastTreePayload = tree;
-        const result = await apiPost('/reconstruct_tree', { tree, method });
-        displayResults(result, method);
-    } catch (e) {
-        const panel = document.getElementById('results-panel');
-        const layout = document.querySelector('.app-layout');
-        panel.style.display = 'block';
-        panel.offsetHeight;
-        layout.classList.add('has-results');
-        showError(panel, 'Error: ' + e.message);
-    } finally {
-        btn.disabled = false;
-        btn.textContent = 'Reconstruct';
+    const batchValidationError = getTreeBatchValidationError(tree);
+    if (batchValidationError) {
+        showToast(batchValidationError);
+        return;
     }
-});
 
-document.getElementById('method-select').addEventListener('change', async () => {
-    if (!lastTreePayload || !document.querySelector('.app-layout').classList.contains('has-results')) return;
-    const method = document.getElementById('method-select').value;
-    const btn = document.getElementById('btn-reconstruct');
-    btn.disabled = true;
-    btn.innerHTML = '<span class="loading"></span>Reconstructing...';
-    try {
-        const result = await apiPost('/reconstruct_tree', { tree: lastTreePayload, method });
-        displayResults(result, method);
-    } catch (e) {
-        const panel = document.getElementById('results-panel');
-        showError(panel, 'Error: ' + e.message);
-    } finally {
-        btn.disabled = false;
-        btn.textContent = 'Reconstruct';
-    }
+    lastTreePayload = tree;
+    await runReconstructionWithCurrentMethod(false);
 });
 
 // ─── Display Results ───
 
-function displayResults(result, requestedMethod) {
-    const panel = document.getElementById('results-panel');
-    const layout = document.querySelector('.app-layout');
-    if (!layout.classList.contains('has-results')) {
-        panel.style.display = 'block';
-        panel.offsetHeight;
-        layout.classList.add('has-results');
-    }
+function clearBatchSelector() {
+    const wrap = document.getElementById('batch-picker-wrap');
+    const menu = document.getElementById('batch-menu');
+    wrap.style.display = 'none';
+    menu.innerHTML = '';
+    menu.style.display = 'none';
+    document.getElementById('btn-batch-picker').textContent = 'Word Set 1 ▾';
+    closePickerMenus();
+}
 
-    const existingBanner = panel.querySelector('.method-fallback-banner');
-    if (existingBanner) existingBanner.remove();
+function updateBatchPickerButton() {
+    const count = lastReconstructResult?.count || 1;
+    document.getElementById('btn-batch-picker').textContent = `Word Set ${activeBatchIndex + 1} of ${count} ▾`;
+}
 
-    if (result.error) {
-        document.getElementById('proto-form-display').textContent = '';
-        showError(document.getElementById('tree-container'), result.error);
-        document.getElementById('similarity-matrix').innerHTML = '';
-        document.getElementById('ages-display').innerHTML = '';
-        lastReconstructResult = null;
+function renderBatchSelector() {
+    const wrap = document.getElementById('batch-picker-wrap');
+    const results = lastReconstructResult?.results || [];
+    if (results.length <= 1) {
+        clearBatchSelector();
         return;
     }
 
-    lastReconstructResult = result;
+    updateBatchPickerButton();
+    renderPickerMenu('batch-menu', [{
+        label: null,
+        items: results.map((_, index) => ({
+            label: `Word Set ${index + 1}`,
+            active: index === activeBatchIndex,
+            onSelect: () => {
+                activeBatchIndex = index;
+                renderBatchSelector();
+                closePickerMenus();
+                renderSelectedBatchResult(selectedMethod);
+            },
+        })),
+    }]);
+    wrap.style.display = 'block';
+}
 
-    if (requestedMethod === 'ml' && result.method_used && result.method_used !== 'ml') {
+function getCurrentBatchResult() {
+    return lastReconstructResult?.results?.[activeBatchIndex] || null;
+}
+
+function renderExportMenus() {
+    if (!lastReconstructResult) return;
+
+    const currentSetLabel = lastReconstructResult.batched
+        ? `Current set (Set ${activeBatchIndex + 1})`
+        : 'Current result';
+
+    const items = [
+        { label: `Tree (SVG) — ${currentSetLabel}`, onSelect: () => { closePickerMenus(); downloadCurrentSvg(); } },
+        { label: `Data (JSON) — ${currentSetLabel}`, onSelect: () => { closePickerMenus(); downloadCurrentJson(); } },
+    ];
+
+    if (lastReconstructResult.batched) {
+        items.push(
+            { label: 'Tree (SVG) — All sets', onSelect: () => { closePickerMenus(); downloadAllSvg(); } },
+            { label: 'Data (JSON) — All sets', onSelect: () => { closePickerMenus(); downloadAllJson(); } },
+        );
+    }
+
+    renderPickerMenu('export-menu', [{
+        label: null,
+        items,
+    }]);
+}
+
+function renderSelectedBatchResult(requestedMethod) {
+    const panel = document.getElementById('results-panel');
+    const existingBanner = panel.querySelector('.method-fallback-banner');
+    if (existingBanner) existingBanner.remove();
+
+    const batch = getCurrentBatchResult();
+    if (!batch) return;
+
+    if (requestedMethod === 'ml' && batch.method_used && batch.method_used !== 'ml') {
         const banner = document.createElement('div');
         banner.className = 'method-fallback-banner';
         banner.textContent = 'ML model unavailable — used algorithmic reconstruction instead.';
-        const methodSelector = panel.querySelector('.method-selector');
-        methodSelector.insertAdjacentElement('afterend', banner);
+        const batchWrap = document.getElementById('batch-picker-wrap');
+        const anchor = batchWrap.style.display !== 'none' ? batchWrap : document.querySelector('.results-toolbar');
+        anchor.insertAdjacentElement('afterend', banner);
     }
 
-    const tree = result.tree;
-
+    const tree = batch.tree;
     const protoDisplay = document.getElementById('proto-form-display');
     protoDisplay.textContent = `*${tree.ipa}`;
     if (tree.reconstructed) {
@@ -616,17 +765,68 @@ function displayResults(result, requestedMethod) {
         tag.textContent = 'reconstructed';
         protoDisplay.appendChild(tag);
     }
-    const actualMethod = result.method_used || requestedMethod;
-    const badge = document.createElement('span');
-    badge.className = 'method-badge';
-    badge.textContent = actualMethod === 'ml' ? 'ML' : 'Algorithm';
-    protoDisplay.appendChild(badge);
+
+    const actualMethod = batch.method_used || requestedMethod;
+    const methodBadge = document.createElement('span');
+    methodBadge.className = 'method-badge';
+    methodBadge.textContent = actualMethod === 'ml' ? 'ML' : 'Algorithm';
+    protoDisplay.appendChild(methodBadge);
+
+    if (lastReconstructResult.batched) {
+        const batchBadge = document.createElement('span');
+        batchBadge.className = 'batch-badge';
+        batchBadge.textContent = `Set ${activeBatchIndex + 1} of ${lastReconstructResult.count}`;
+        protoDisplay.appendChild(batchBadge);
+    }
 
     drawTree(tree);
 
-    if (result.similarity_matrix) displaySimilarityMatrix(result.similarity_matrix);
+    if (batch.similarity_matrix) {
+        displaySimilarityMatrix(batch.similarity_matrix);
+    } else {
+        document.getElementById('similarity-matrix').innerHTML = '';
+    }
 
     displayAges(tree);
+    renderExportMenus();
+}
+
+function displayResults(resultEnvelope, requestedMethod, preserveBatchIndex = false) {
+    const panel = document.getElementById('results-panel');
+    const layout = document.querySelector('.app-layout');
+    if (!layout.classList.contains('has-results')) {
+        panel.style.display = 'block';
+        panel.offsetHeight;
+        layout.classList.add('has-results');
+    }
+
+    if (resultEnvelope.error) {
+        clearBatchSelector();
+        document.getElementById('proto-form-display').textContent = '';
+        showError(document.getElementById('tree-container'), resultEnvelope.error);
+        document.getElementById('similarity-matrix').innerHTML = '';
+        document.getElementById('ages-display').innerHTML = '';
+        lastReconstructResult = null;
+        activeBatchIndex = 0;
+        return;
+    }
+
+    const results = Array.isArray(resultEnvelope.results) ? resultEnvelope.results : [];
+    if (results.length === 0) {
+        clearBatchSelector();
+        document.getElementById('proto-form-display').textContent = '';
+        showError(document.getElementById('tree-container'), 'No reconstruction results returned.');
+        document.getElementById('similarity-matrix').innerHTML = '';
+        document.getElementById('ages-display').innerHTML = '';
+        lastReconstructResult = null;
+        activeBatchIndex = 0;
+        return;
+    }
+
+    lastReconstructResult = resultEnvelope;
+    activeBatchIndex = preserveBatchIndex ? Math.min(activeBatchIndex, results.length - 1) : 0;
+    renderBatchSelector();
+    renderSelectedBatchResult(requestedMethod);
 }
 
 // ─── Similarity Matrix ───
@@ -712,8 +912,7 @@ function collectInternalNodes(node, result) {
 
 // ─── D3 Tree Visualization ───
 
-function drawTree(treeData) {
-    const container = document.getElementById('tree-container');
+function renderTreeInto(container, treeData, animate = true) {
     container.innerHTML = '';
 
     const root = d3.hierarchy(treeData, d => d.children);
@@ -723,7 +922,7 @@ function drawTree(treeData) {
     const height = Math.max(350, nodeCount * 55);
     const margin = { top: 30, right: 220, bottom: 30, left: 50 };
 
-    const svg = d3.select('#tree-container')
+    const svg = d3.select(container)
         .append('svg')
         .attr('width', width)
         .attr('height', height);
@@ -737,28 +936,29 @@ function drawTree(treeData) {
     const treeLayout = d3.tree().size([innerH, innerW]);
     treeLayout(root);
 
-    // Links
-    g.selectAll('.tree-link')
+    const links = g.selectAll('.tree-link')
         .data(root.links())
         .enter()
         .append('path')
         .attr('class', 'tree-link')
-        .attr('d', d3.linkHorizontal().x(d => d.y).y(d => d.x))
-        .style('opacity', 0)
-        .transition().duration(600).delay((d, i) => i * 100)
-        .style('opacity', 1);
+        .attr('d', d3.linkHorizontal().x(d => d.y).y(d => d.x));
 
-    // Nodes
     const nodes = g.selectAll('.tree-node')
         .data(root.descendants())
         .enter()
         .append('g')
         .attr('class', d => `tree-node ${d.data.type || ''}`)
-        .attr('transform', d => `translate(${d.y},${d.x})`)
-        .style('opacity', 0);
+        .attr('transform', d => `translate(${d.y},${d.x})`);
 
-    nodes.transition().duration(600).delay((d, i) => i * 100)
-        .style('opacity', 1);
+    if (animate) {
+        links.style('opacity', 0)
+            .transition().duration(600).delay((d, i) => i * 100)
+            .style('opacity', 1);
+
+        nodes.style('opacity', 0)
+            .transition().duration(600).delay((d, i) => i * 100)
+            .style('opacity', 1);
+    }
 
     nodes.append('circle')
         .attr('r', d => {
@@ -767,7 +967,6 @@ function drawTree(treeData) {
             return 5;
         });
 
-    // Label: name + ipa
     nodes.append('text')
         .attr('dy', '0.35em')
         .attr('x', d => d.children ? -14 : 14)
@@ -780,7 +979,6 @@ function drawTree(treeData) {
             return `${label}: ${star}${ipa}`;
         });
 
-    // Age label for internal nodes
     nodes.filter(d => d.data.estimated_age_years !== undefined && d.data.estimated_age_years > 0)
         .append('text')
         .attr('dy', '1.6em')
@@ -788,6 +986,13 @@ function drawTree(treeData) {
         .attr('text-anchor', d => d.children ? 'end' : 'start')
         .attr('class', 'node-age-tag')
         .text(d => `~${d.data.estimated_age_years.toLocaleString()} yrs`);
+
+    return svg.node();
+}
+
+function drawTree(treeData) {
+    const container = document.getElementById('tree-container');
+    renderTreeInto(container, treeData, true);
 }
 
 // ─── Init ───
@@ -1129,14 +1334,13 @@ function downloadFile(filename, content, mimeType) {
     URL.revokeObjectURL(url);
 }
 
-document.getElementById('btn-export-svg').addEventListener('click', () => {
-    const svg = document.querySelector('#tree-container svg');
-    if (!svg) {
-        showToast('No tree to export. Run a reconstruction first.', 'info');
-        return;
-    }
+function buildSvgExportString(treeData) {
+    const tempContainer = document.createElement('div');
+    tempContainer.style.width = '960px';
+    const svg = renderTreeInto(tempContainer, treeData, false);
     const clone = svg.cloneNode(true);
     clone.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
+
     const styles = document.createElement('style');
     styles.textContent = `
         .tree-link { fill: none; stroke: #8a7e6f; stroke-width: 1.5; }
@@ -1147,16 +1351,62 @@ document.getElementById('btn-export-svg').addEventListener('click', () => {
         circle { fill: #4a6741; }
     `;
     clone.insertBefore(styles, clone.firstChild);
-    const serializer = new XMLSerializer();
-    const svgStr = '<?xml version="1.0" encoding="UTF-8"?>\n' + serializer.serializeToString(clone);
-    downloadFile('ipabrew-tree.svg', svgStr, 'image/svg+xml');
-});
 
-document.getElementById('btn-export-json').addEventListener('click', () => {
+    const serializer = new XMLSerializer();
+    return '<?xml version="1.0" encoding="UTF-8"?>\n' + serializer.serializeToString(clone);
+}
+
+function downloadCurrentSvg() {
+    const batch = getCurrentBatchResult();
+    if (!batch) {
+        showToast('No tree to export. Run a reconstruction first.', 'info');
+        return;
+    }
+
+    const suffix = lastReconstructResult.batched ? `-set-${activeBatchIndex + 1}` : '';
+    downloadFile(`ipabrew-tree${suffix}.svg`, buildSvgExportString(batch.tree), 'image/svg+xml');
+}
+
+function downloadAllSvg() {
+    if (!lastReconstructResult) {
+        showToast('No tree to export. Run a reconstruction first.', 'info');
+        return;
+    }
+
+    lastReconstructResult.results.forEach((batch, index) => {
+        setTimeout(() => {
+            downloadFile(`ipabrew-tree-set-${index + 1}.svg`, buildSvgExportString(batch.tree), 'image/svg+xml');
+        }, index * 150);
+    });
+}
+
+function downloadCurrentJson() {
+    const batch = getCurrentBatchResult();
+    if (!batch) {
+        showToast('No results to export. Run a reconstruction first.', 'info');
+        return;
+    }
+
+    const suffix = lastReconstructResult.batched ? `-set-${activeBatchIndex + 1}` : '';
+    downloadFile(`ipabrew-results${suffix}.json`, JSON.stringify(batch, null, 2), 'application/json');
+}
+
+function downloadAllJson() {
     if (!lastReconstructResult) {
         showToast('No results to export. Run a reconstruction first.', 'info');
         return;
     }
-    const json = JSON.stringify(lastReconstructResult, null, 2);
-    downloadFile('ipabrew-results.json', json, 'application/json');
+
+    downloadFile('ipabrew-results-all.json', JSON.stringify(lastReconstructResult, null, 2), 'application/json');
+}
+
+document.getElementById('btn-export').addEventListener('click', (e) => {
+    e.stopPropagation();
+    if (!lastReconstructResult) {
+        showToast('No results to export. Run a reconstruction first.', 'info');
+        return;
+    }
+
+    renderExportMenus();
+    togglePickerMenu('export-menu');
 });

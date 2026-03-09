@@ -627,42 +627,16 @@ footer {
     margin-top: 30px;
 }
 
-/* ── Method Selector ── */
+/* ── Result Controls ── */
 
-.method-selector {
+ .results-toolbar {
     display: flex;
-    align-items: center;
-    gap: 8px;
+    gap: 10px;
+    flex-wrap: wrap;
     margin-bottom: 14px;
-    font-size: 0.85rem;
 }
 
-.method-selector label {
-    color: var(--text-muted);
-    font-weight: 600;
-    font-family: -apple-system, sans-serif;
-    font-size: 0.78rem;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-}
-
-.method-selector select {
-    padding: 4px 8px;
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    color: var(--text);
-    font-size: 0.82rem;
-    font-family: var(--font-serif);
-    cursor: pointer;
-}
-
-.method-selector select:focus {
-    outline: none;
-    border-color: var(--primary);
-}
-
-.method-badge {
+ .method-badge {
     display: inline-block;
     margin-left: 10px;
     padding: 1px 8px;
@@ -677,14 +651,30 @@ footer {
     color: var(--accent);
 }
 
+ .batch-badge {
+    display: inline-block;
+    margin-left: 10px;
+    padding: 1px 8px;
+    border-radius: 3px;
+    font-size: 0.6rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    vertical-align: middle;
+    font-family: -apple-system, sans-serif;
+    background: rgba(91, 110, 138, 0.12);
+    color: var(--inter-color);
+}
 
-/* ── Demo Picker ── */
+/* ── Picker Menus ── */
 
-.demo-picker-wrap {
+ .demo-picker-wrap,
+.picker-wrap {
     position: relative;
 }
 
-.demo-menu {
+ .demo-menu,
+.picker-menu {
     position: absolute;
     bottom: calc(100% + 6px);
     left: 0;
@@ -699,17 +689,20 @@ footer {
     padding: 6px 0;
 }
 
-.demo-group {
+ .demo-group,
+.picker-group {
     padding: 0 4px;
 }
 
-.demo-group + .demo-group {
+ .demo-group + .demo-group,
+.picker-group + .picker-group {
     border-top: 1px solid var(--border-light);
     margin-top: 4px;
     padding-top: 4px;
 }
 
-.demo-group-label {
+ .demo-group-label,
+.picker-group-label {
     padding: 4px 10px 2px;
     font-size: 0.65rem;
     font-weight: 700;
@@ -719,7 +712,8 @@ footer {
     font-family: -apple-system, sans-serif;
 }
 
-.demo-item {
+ .demo-item,
+.picker-item {
     display: block;
     width: 100%;
     text-align: left;
@@ -734,7 +728,10 @@ footer {
     transition: background 0.1s;
 }
 
-.demo-item:hover {
+ .demo-item:hover,
+.demo-item.active,
+.picker-item:hover,
+.picker-item.active {
     background: var(--surface-hover);
     color: var(--primary);
 }
@@ -1039,12 +1036,22 @@ body.ipa-kb-open main {
 .export-row {
     display: flex;
     gap: 8px;
+    flex-wrap: wrap;
     margin-top: 16px;
     padding-top: 16px;
     border-top: 1px solid var(--border-light);
 }
 
+.export-picker-wrap {
+    width: 100%;
+}
+
+.export-picker-wrap .picker-menu {
+    min-width: 100%;
+}
+
 .btn-export {
+    width: 100%;
     padding: 6px 14px;
     font-size: 0.78rem;
     background: var(--surface);

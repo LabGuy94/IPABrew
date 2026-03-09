@@ -4,7 +4,9 @@ from app.reconstruction import (
     load_dataset,
     search_dataset,
     get_sample,
+    reconstruct_tree,
     MAX_TREE_DEPTH,
+
 )
 
 
@@ -42,6 +44,150 @@ class TestAlignWords:
     def test_empty_list_error(self):
         result = align_words([])
         assert "error" in result
+
+
+class TestReconstructTree:
+    def test_single_tree_returns_single_result_envelope(self):
+        tree = {
+            "label": "Proto-Test",
+            "_is_root": True,
+            "children": [
+                {
+                    "label": "Western",
+                    "ipa": "",
+                    "children": [
+                        {"label": "French", "ipa": "pere"},
+                        {"label": "Spanish", "ipa": "padre"},
+                    ],
+                },
+                {
+                    "label": "Eastern",
+                    "ipa": "",
+                    "children": [
+                        {"label": "Italian", "ipa": "padre"},
+                        {"label": "Romanian", "ipa": "patre"},
+                    ],
+                },
+            ],
+        }
+
+        result = reconstruct_tree(tree, method="algorithm")
+
+        assert result["count"] == 1
+        assert result["batched"] is False
+        assert len(result["results"]) == 1
+
+        batch = result["results"][0]
+        assert batch["batch_index"] == 0
+        assert batch["tree"]["type"] == "root"
+        assert batch["tree"]["children"][0]["children"][0]["ipa"] == "pere"
+        assert "similarity_matrix" in batch
+        assert batch["method_used"] == "algorithm"
+
+    def test_comma_separated_inputs_reconstruct_multiple_results(self):
+        tree = {
+            "label": "Proto-Test",
+            "_is_root": True,
+            "children": [
+                {
+                    "label": "Western",
+                    "ipa": "",
+                    "children": [
+                        {"label": "French", "ipa": "pere,mere"},
+                        {"label": "Spanish", "ipa": "padre,madre"},
+                    ],
+                },
+                {
+                    "label": "Eastern",
+                    "ipa": "",
+                    "children": [
+                        {"label": "Italian", "ipa": "padre,madre"},
+                        {"label": "Romanian", "ipa": "patre,matre"},
+                    ],
+                },
+            ],
+        }
+
+        result = reconstruct_tree(tree, method="algorithm")
+
+        assert result["count"] == 2
+        assert result["batched"] is True
+        assert len(result["results"]) == 2
+        assert [batch["batch_index"] for batch in result["results"]] == [0, 1]
+        assert [
+            batch["tree"]["children"][0]["children"][0]["ipa"]
+            for batch in result["results"]
+        ] == ["pere", "mere"]
+        assert [
+            batch["tree"]["children"][1]["children"][1]["ipa"]
+            for batch in result["results"]
+        ] == ["patre", "matre"]
+
+    def test_mismatched_batch_lengths_return_error(self):
+        tree = {
+            "label": "Proto-Test",
+            "_is_root": True,
+            "children": [
+                {
+                    "label": "Western",
+                    "ipa": "",
+                    "children": [
+                        {"label": "French", "ipa": "pere,mere"},
+                        {"label": "Spanish", "ipa": "padre"},
+                    ],
+                },
+                {
+                    "label": "Eastern",
+                    "ipa": "",
+                    "children": [
+                        {"label": "Italian", "ipa": "padre,madre"},
+                        {"label": "Romanian", "ipa": "patre,matre"},
+                    ],
+                },
+            ],
+        }
+
+        result = reconstruct_tree(tree, method="algorithm")
+
+        assert "error" in result
+        assert "same number of comma-separated forms" in result["error"]
+
+
+class TestReconstructTreeRoute:
+    def test_route_returns_batch_envelope(self, client):
+        response = client.post(
+            "/api/reconstruct_tree",
+            json={
+                "method": "algorithm",
+                "tree": {
+                    "label": "Proto-Test",
+                    "children": [
+                        {
+                            "label": "Western",
+                            "ipa": "",
+                            "children": [
+                                {"label": "French", "ipa": "pere,mere"},
+                                {"label": "Spanish", "ipa": "padre,madre"},
+                            ],
+                        },
+                        {
+                            "label": "Eastern",
+                            "ipa": "",
+                            "children": [
+                                {"label": "Italian", "ipa": "padre,madre"},
+                                {"label": "Romanian", "ipa": "patre,matre"},
+                            ],
+                        },
+                    ],
+                },
+            },
+        )
+
+        assert response.status_code == 200
+        data = response.get_json()
+        assert data["count"] == 2
+        assert data["batched"] is True
+        assert len(data["results"]) == 2
 
 
 class TestLoadDataset:

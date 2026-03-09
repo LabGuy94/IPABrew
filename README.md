@@ -144,7 +144,6 @@ IPABrew/
 │   └── notebooks/
 │       └── train_dpd.ipynb    # Google Colab training notebook
 ├── requirements.txt           # All Python dependencies
-├── AGENT.md                   # AI agent development context
 └── README.md
 ```
 

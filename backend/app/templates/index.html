@@ -25,6 +25,7 @@
                     Build your tree: the <strong>root</strong> is always reconstructed.
                     <strong>Intermediates</strong> can optionally have IPA input (empty ones get reconstructed).
                     <strong>Descendants</strong> (leaves) must have IPA input.
+                    Use <strong>commas</strong> in any IPA field to reconstruct multiple word sets at once.
                 </p>
 
                 <!-- Root node -->
@@ -46,9 +47,9 @@
 
                 <div class="button-row" style="margin-top: 20px;">
                     <button id="btn-reconstruct" class="btn btn-primary btn-reconstruct-main">Reconstruct</button>
-                    <div class="demo-picker-wrap">
+                    <div class="picker-wrap">
                         <button id="btn-load-demo" class="btn btn-secondary">Load Demo ▾</button>
-                        <div id="demo-menu" class="demo-menu" style="display:none;"></div>
+                        <div id="demo-menu" class="demo-menu picker-menu" style="display:none;"></div>
                     </div>
                     <button id="btn-clear" class="btn btn-secondary">Clear</button>
                     <button id="btn-ipa-keyboard" class="btn btn-secondary" title="Toggle IPA Keyboard">⌨ IPA</button>
@@ -59,13 +60,17 @@
             <div class="panel results-panel" id="results-panel" style="display: none;">
                 <h2>Results</h2>
 
-                <div class="method-selector">
-                    <label for="method-select">Method:</label>
-                    <select id="method-select">
-                        <option value="ml" selected>Machine Learning (DPD)</option>
-                        <option value="algorithm">Algorithm (LingPy)</option>
-                    </select>
+                <div class="results-toolbar">
+                    <div class="picker-wrap">
+                        <button id="btn-method-picker" class="btn btn-secondary">Method: Machine Learning (DPD) ▾</button>
+                        <div id="method-menu" class="picker-menu" style="display:none;"></div>
+                    </div>
+                    <div id="batch-picker-wrap" class="picker-wrap" style="display:none;">
+                        <button id="btn-batch-picker" class="btn btn-secondary">Word Set 1 ▾</button>
+                        <div id="batch-menu" class="picker-menu" style="display:none;"></div>
+                    </div>
                 </div>
+
 
                 <div id="proto-form-display" class="proto-form"></div>
 
@@ -86,8 +91,10 @@
                 </div>
 
                 <div class="export-row">
-                    <button id="btn-export-svg" class="btn-export">Download Tree (SVG)</button>
-                    <button id="btn-export-json" class="btn-export">Download Data (JSON)</button>
+                    <div class="picker-wrap export-picker-wrap">
+                        <button id="btn-export" class="btn-export">Download ▾</button>
+                        <div id="export-menu" class="picker-menu" style="display:none;"></div>
+                    </div>
                 </div>
             </div>
         </div>

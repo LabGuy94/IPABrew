@@ -34,6 +34,5 @@ model/data/lexibank/
 
 # Replit-specific files
 .replit
-AGENT.md
 replit.md
 attached_assets/
