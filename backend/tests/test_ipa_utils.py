@@ -65,6 +65,10 @@ class TestGetFeatures:
             assert "segment" in entry
             assert "features" in entry
 
+    def test_multi_codepoint_segment_labels_preserved(self):
+        result = get_features("t͡sa")
+        assert [entry["segment"] for entry in result] == ["t͡s", "a"]
+
     def test_empty_string(self):
         result = get_features("")
         assert isinstance(result, list)

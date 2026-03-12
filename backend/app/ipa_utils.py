@@ -48,10 +48,12 @@ def normalized_edit_distance(word1, word2):
 def get_features(word):
     ft = _get_feature_table()
     try:
+        # Panphon feature vectors are segment-level, not codepoint-level.
+        segments = ft.segs_safe(word)
         fts = ft.word_fts(word)
         return [
             {"segment": seg, "features": dict(zip(ft.names, fv.numeric()))}
-            for seg, fv in zip(word, fts)
+            for seg, fv in zip(segments, fts)
         ]
     except Exception:
         logger.debug("Failed to get features for '%s'", word, exc_info=True)
