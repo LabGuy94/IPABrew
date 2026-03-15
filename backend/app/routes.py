@@ -20,6 +20,13 @@ from app.glottochronology import (
 api = Blueprint("api", __name__)
 
 
+def _parse_float_value(value, field_name):
+    try:
+        return float(value), None
+    except (TypeError, ValueError):
+        return None, (jsonify({"error": f"Field '{field_name}' must be a number"}), 400)
+
+
 @api.route("/health", methods=["GET"])
 def health():
     return jsonify({"status": "ok"})
@@ -127,8 +134,14 @@ def date_divergence():
         return jsonify({"error": "JSON body required"}), 400
 
     if "cognate_pct" in data:
-        pct = float(data["cognate_pct"])
-        rate = float(data.get("retention_rate", 0.86))
+        pct, error = _parse_float_value(data["cognate_pct"], "cognate_pct")
+        if error is not None:
+            return error
+
+        rate, error = _parse_float_value(data.get("retention_rate", 0.86), "retention_rate")
+        if error is not None:
+            return error
+
         years = estimate_divergence_years(pct, rate)
         return jsonify({
             "cognate_pct": pct,
@@ -137,7 +150,10 @@ def date_divergence():
         })
 
     if "ned" in data:
-        ned = float(data["ned"])
+        ned, error = _parse_float_value(data["ned"], "ned")
+        if error is not None:
+            return error
+
         return jsonify(estimate_from_ned(ned))
 
     return jsonify({"error": "Provide 'cognate_pct' or 'ned'"}), 400

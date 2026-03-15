@@ -107,3 +107,17 @@ class TestRetentionCurve:
         for p in points:
             assert "years" in p
             assert "cognate_pct" in p
+
+
+class TestDateDivergenceRoute:
+    def test_rejects_non_numeric_cognate_pct(self, client):
+        response = client.post("/api/date", json={"cognate_pct": "not-a-number"})
+
+        assert response.status_code == 400
+        assert response.get_json() == {"error": "Field 'cognate_pct' must be a number"}
+
+    def test_rejects_non_numeric_ned(self, client):
+        response = client.post("/api/date", json={"ned": {"bad": "type"}})
+
+        assert response.status_code == 400
+        assert response.get_json() == {"error": "Field 'ned' must be a number"}
