@@ -615,8 +615,8 @@ class GreedySampleCringeBackpropThroughout(GreedySampleStrategyBase):
         # 2 > table logging
         
         if self.current_epoch > 0 and isinstance(self.logger, WandbLogger):
-            # self.logger.experiment.log({f'combined/{prefix}/samples': copy(self.samples_tables[prefix])}) # copy hack to workaround https://github.com/wandb/wandb/issues/2981
-            pass # TODO unblock table logging when needed, else keeping all tables takes too much space
+            # Table logging is disabled to avoid retaining large W&B tables during evaluation.
+            pass
 
         # 2 > run eval of submodels?
         

@@ -66,7 +66,7 @@ let lastReconstructResult = null;
 let activeBatchIndex = 0;
 let selectedMethod = 'ml';
 
-// ─── Tree Editor State ───
+// Tree editor state
 
 let branchCounter = 0;
 let lastTreePayload = null;
@@ -200,7 +200,7 @@ document.getElementById('btn-add-intermediate').addEventListener('click', () => 
     });
 })();
 
-// ─── Demo Data ───
+// Demo data
 
 const DEMOS = {
     'Romance': [
@@ -595,7 +595,7 @@ function getTreeBatchValidationError(tree) {
 }
 
 
-// ─── Build tree from editor ───
+// Build tree from editor
 
 function buildTreeFromEditor() {
     const rootLabel = document.getElementById('root-label').value.trim() || 'Proto-Language';
@@ -626,7 +626,7 @@ function buildTreeFromEditor() {
     return { label: rootLabel, children };
 }
 
-// ─── Reconstruct ───
+// Reconstruct
 
 async function runReconstructionWithCurrentMethod(preserveBatchIndex) {
     if (!lastTreePayload) return;
@@ -668,7 +668,7 @@ document.getElementById('btn-reconstruct').addEventListener('click', async () =>
     await runReconstructionWithCurrentMethod(false);
 });
 
-// ─── Display Results ───
+// Display results
 
 function clearBatchSelector() {
     const wrap = document.getElementById('batch-picker-wrap');
@@ -829,7 +829,7 @@ function displayResults(resultEnvelope, requestedMethod, preserveBatchIndex = fa
     renderSelectedBatchResult(requestedMethod);
 }
 
-// ─── Similarity Matrix ───
+// Similarity matrix
 
 function displaySimilarityMatrix(matrix) {
     const container = document.getElementById('similarity-matrix');
@@ -870,7 +870,7 @@ function simColor(value, isDiagonal) {
     return `rgba(${r}, ${g}, ${b}, ${0.1 + value * 0.15})`;
 }
 
-// ─── Relative Ages Table ───
+// Relative ages table
 
 function displayAges(tree) {
     const container = document.getElementById('ages-display');
@@ -910,7 +910,7 @@ function collectInternalNodes(node, result) {
     }
 }
 
-// ─── D3 Tree Visualization ───
+// D3 tree visualization
 
 function renderTreeInto(container, treeData, animate = true) {
     container.innerHTML = '';
@@ -995,10 +995,10 @@ function drawTree(treeData) {
     renderTreeInto(container, treeData, true);
 }
 
-// ─── Init ───
+// Init
 initTree();
 
-// ─── IPA Keyboard ───
+// IPA keyboard
 
 const IPA_SYMBOLS = {
     consonants: {
@@ -1320,7 +1320,7 @@ document.querySelector('.tree-editor').addEventListener('focusin', (e) => {
     }
 });
 
-// ─── Export ───
+// Export
 
 function downloadFile(filename, content, mimeType) {
     const blob = new Blob([content], { type: mimeType });

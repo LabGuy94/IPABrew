@@ -48,7 +48,7 @@ class PositionalEncoding(nn.Module):
         # if True:
         if lens is None:  # each sequence is one sequence (target)
             return self._dropout(token_embedding + self._pos_embedding[:, :token_embedding.size(1), :token_embedding.size(2)])
-        else:  # each sequence is a concatenation of multiple sequences (source) TODO what's going on here?
+        else:  # each sequence is a concatenation of multiple source sequences
             pos_embedding = []
             for _lens in lens:
                 _pos_embedding = []

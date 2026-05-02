@@ -15,7 +15,7 @@ import threading
 
 logger = logging.getLogger(__name__)
 
-# ── Paths ──────────────────────────────────────────────────────────────────────
+# Paths
 _THIS_DIR = os.path.dirname(os.path.abspath(__file__))
 _APP_DIR = os.path.dirname(_THIS_DIR)
 _DPD_DIR = os.path.join(_APP_DIR, "dpd")
@@ -25,7 +25,7 @@ _CHECKPOINT_PATH = os.path.join(_PROJECT_ROOT, "model", "checkpoints", "epoch34.
 _DATA_DIR = os.path.join(_PROJECT_ROOT, "model", "data", "combined")
 _CONFIG_PATH = os.path.join(_PROJECT_ROOT, "model", "checkpoints", "model_config.yaml")
 
-# ── Module state ───────────────────────────────────────────────────────────────
+# Module state
 _model = None
 _dm = None
 _load_lock = threading.Lock()
@@ -156,7 +156,7 @@ def _load():
         logger.error("Failed to load DPD model: %s", e, exc_info=True)
 
 
-# ── Public API ─────────────────────────────────────────────────────────────────
+# Public API
 
 
 def init():

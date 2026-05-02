@@ -1,6 +1,6 @@
 import logging
 
-from flask import Flask, send_from_directory
+from flask import Flask, render_template, send_from_directory
 from flask_cors import CORS
 
 logging.getLogger("lingpy").setLevel(logging.WARNING)
@@ -25,5 +25,9 @@ def create_app():
     @app.route("/")
     def index():
         return send_from_directory(app.template_folder, "index.html")
+
+    @app.route("/docs")
+    def docs():
+        return render_template("docs.html")
 
     return app
