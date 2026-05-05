@@ -2,7 +2,7 @@
 
 ![ipabrew](https://github.com/user-attachments/assets/f35799fe-8e9f-47c1-b73f-b5521af8c65d)
 
-IPABrew is a local Flask application for exploring proto-language reconstruction from IPA cognates. It combines a browser tree editor, JSON APIs, a command-line interface, neural reconstruction support, algorithmic reconstruction, IPA utilities, and divergence-date estimates.
+IPABrew is a local Flask application for proto-language reconstruction from IPA cognates, powered by a repurposed and retrained DPD bidirectional Transformer covering 65 languages and 637 IPA tokens across a combined SIGTYP 2022 + WikiHan training corpus. Around that neural core it bundles a browser tree editor, JSON APIs, a command-line interface, an algorithmic LingPy reconstruction baseline, IPA utilities, and divergence-date estimates.
 
 ## Background
 
