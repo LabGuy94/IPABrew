@@ -13,7 +13,7 @@ logging.basicConfig(level=logging.WARNING)
 logger = logging.getLogger(__name__)
 
 LANGUAGES = ["Romanian", "French", "Italian", "Spanish", "Portuguese"]
-DATA_PATH = os.path.join(os.path.dirname(__file__), "data", "romance_ipa.tsv")
+DATA_PATH = os.path.join(os.path.dirname(os.path.dirname(__file__)), "data", "romance_ipa.tsv")
 
 _dataset = None
 
