@@ -56,7 +56,13 @@ def reconstruct():
         return jsonify({"error": "JSON body required"}), 400
 
     if "index" in data:
-        result = reconstruct_from_dataset_entry(int(data["index"]))
+        try:
+            index = int(data["index"])
+        except (TypeError, ValueError):
+            return jsonify({"error": "Field 'index' must be an integer"}), 400
+        result = reconstruct_from_dataset_entry(index)
+        if "error" in result:
+            return jsonify(result), 400
         return jsonify(result)
 
     words = data.get("words", [])

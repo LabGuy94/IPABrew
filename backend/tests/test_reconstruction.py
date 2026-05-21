@@ -190,6 +190,53 @@ class TestReconstructTreeRoute:
         assert len(data["results"]) == 2
 
 
+class TestReconstructRoute:
+    def test_valid_index_returns_200(self, client):
+        response = client.post("/api/reconstruct", json={"index": 0})
+        assert response.status_code == 200
+        data = response.get_json()
+        assert "proto_form" in data
+        assert data["dataset_index"] == 0
+
+    def test_non_integer_index_returns_400(self, client):
+        response = client.post("/api/reconstruct", json={"index": "abc"})
+        assert response.status_code == 400
+        data = response.get_json()
+        assert "error" in data
+        assert "integer" in data["error"]
+
+    def test_null_index_returns_400(self, client):
+        response = client.post("/api/reconstruct", json={"index": None})
+        assert response.status_code == 400
+        data = response.get_json()
+        assert "error" in data
+
+    def test_out_of_range_index_returns_400(self, client):
+        response = client.post("/api/reconstruct", json={"index": 999999})
+        assert response.status_code == 400
+        data = response.get_json()
+        assert "error" in data
+        assert "out of range" in data["error"].lower()
+
+    def test_missing_body_returns_error(self, client):
+        response = client.post(
+            "/api/reconstruct",
+            data="not json",
+            content_type="text/plain",
+        )
+        assert response.status_code == 415
+
+    def test_too_few_words_returns_400(self, client):
+        response = client.post(
+            "/api/reconstruct",
+            json={"words": ["padre"]},
+        )
+        assert response.status_code == 400
+        data = response.get_json()
+        assert "error" in data
+        assert "at least 2" in data["error"]
+
+
 class TestLoadDataset:
     def test_returns_nonempty(self):
         data = load_dataset()
