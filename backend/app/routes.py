@@ -27,6 +27,12 @@ def _parse_float_value(value, field_name):
         return None, (jsonify({"error": f"Field '{field_name}' must be a number"}), 400)
 
 
+def _validate_open_unit_interval(value, field_name):
+    if 0 < value < 1:
+        return None
+    return jsonify({"error": f"Field '{field_name}' must be greater than 0 and less than 1"}), 400
+
+
 @api.route("/health", methods=["GET"])
 def health():
     return jsonify({"status": "ok"})
@@ -143,10 +149,16 @@ def date_divergence():
         pct, error = _parse_float_value(data["cognate_pct"], "cognate_pct")
         if error is not None:
             return error
+        bounds_error = _validate_open_unit_interval(pct, "cognate_pct")
+        if bounds_error is not None:
+            return bounds_error
 
         rate, error = _parse_float_value(data.get("retention_rate", 0.86), "retention_rate")
         if error is not None:
             return error
+        bounds_error = _validate_open_unit_interval(rate, "retention_rate")
+        if bounds_error is not None:
+            return bounds_error
 
         years = estimate_divergence_years(pct, rate)
         return jsonify({

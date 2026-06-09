@@ -44,6 +44,10 @@ class TestEstimateDivergenceYears:
         # Faster decay rate -> fewer years to reach same cognate %
         assert years_fast < years_default
 
+    def test_invalid_retention_rate_returns_none(self):
+        assert estimate_divergence_years(0.5, retention_rate=1.0) is None
+        assert estimate_divergence_years(0.5, retention_rate=0.0) is None
+
 
 class TestEstimateFromNed:
     def test_ned_zero(self):
@@ -121,3 +125,22 @@ class TestDateDivergenceRoute:
 
         assert response.status_code == 400
         assert response.get_json() == {"error": "Field 'ned' must be a number"}
+
+    def test_rejects_out_of_range_cognate_pct(self, client):
+        response = client.post("/api/date", json={"cognate_pct": 1.0})
+
+        assert response.status_code == 400
+        assert response.get_json() == {
+            "error": "Field 'cognate_pct' must be greater than 0 and less than 1"
+        }
+
+    def test_rejects_out_of_range_retention_rate(self, client):
+        response = client.post(
+            "/api/date",
+            json={"cognate_pct": 0.8, "retention_rate": 1.0},
+        )
+
+        assert response.status_code == 400
+        assert response.get_json() == {
+            "error": "Field 'retention_rate' must be greater than 0 and less than 1"
+        }

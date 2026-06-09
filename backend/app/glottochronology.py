@@ -21,6 +21,8 @@ NED_DIVERGENCE_TABLE = [
 def estimate_divergence_years(cognate_pct, retention_rate=0.86):
     if cognate_pct <= 0 or cognate_pct >= 1:
         return None
+    if retention_rate <= 0 or retention_rate >= 1:
+        return None
     return (math.log(cognate_pct) / (2 * math.log(retention_rate))) * 1000
 
 
