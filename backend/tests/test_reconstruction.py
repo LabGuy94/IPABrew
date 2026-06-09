@@ -37,6 +37,11 @@ class TestAlignWords:
         assert "input" in result
         assert len(result["alignment"]) == 2
 
+    def test_transcription_delimiters_are_cleaned_before_alignment(self):
+        result = align_words(["/padre/", "[pere]"])
+        assert result["input"] == ["padre", "pere"]
+        assert len(result["alignment"]) == 2
+
     def test_single_word_error(self):
         result = align_words(["padre"])
         assert "error" in result
@@ -83,6 +88,22 @@ class TestReconstructTree:
         assert batch["tree"]["children"][0]["children"][0]["ipa"] == "pere"
         assert "similarity_matrix" in batch
         assert batch["method_used"] == "algorithm"
+
+    def test_tree_inputs_strip_transcription_delimiters(self):
+        tree = {
+            "label": "Proto-Test",
+            "_is_root": True,
+            "children": [
+                {"label": "French", "ipa": "/peɾe/"},
+                {"label": "Spanish", "ipa": "[paðɾe]"},
+            ],
+        }
+
+        result = reconstruct_tree(tree, method="algorithm")
+
+        batch = result["results"][0]
+        leaves = batch["tree"]["children"]
+        assert [leaf["ipa"] for leaf in leaves] == ["peɾe", "paðɾe"]
 
     def test_comma_separated_inputs_reconstruct_multiple_results(self):
         tree = {

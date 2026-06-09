@@ -1,9 +1,32 @@
 import logging
+import unicodedata
 
 logger = logging.getLogger(__name__)
 
 import panphon
 import panphon.distance
+
+
+_TRANSCRIPTION_DELIMITERS = {
+    "/": "/",
+    "[": "]",
+    "(": ")",
+    "⟨": "⟩",
+}
+
+
+def normalize_ipa_input(value):
+    text = str(value or "").strip()
+    if not text:
+        return ""
+
+    text = unicodedata.normalize("NFC", text)
+    if len(text) >= 2:
+        closing = _TRANSCRIPTION_DELIMITERS.get(text[0])
+        if closing and text[-1] == closing:
+            text = text[1:-1].strip()
+
+    return text
 
 
 _ft = None
@@ -26,19 +49,21 @@ def _get_distance():
 
 def feature_edit_distance(word1, word2):
     dst = _get_distance()
-    return dst.feature_edit_distance(word1, word2)
+    return dst.feature_edit_distance(normalize_ipa_input(word1), normalize_ipa_input(word2))
 
 
 def weighted_feature_edit_distance(word1, word2):
     dst = _get_distance()
-    return dst.weighted_feature_edit_distance(word1, word2)
+    return dst.weighted_feature_edit_distance(normalize_ipa_input(word1), normalize_ipa_input(word2))
 
 
 def normalized_edit_distance(word1, word2):
+    word1 = normalize_ipa_input(word1)
+    word2 = normalize_ipa_input(word2)
     fed = feature_edit_distance(word1, word2)
     ft = _get_feature_table()
-    seg_count1 = len(ft.segs_safe(word1))
-    seg_count2 = len(ft.segs_safe(word2))
+    seg_count1 = len(ft.ipa_segs(word1))
+    seg_count2 = len(ft.ipa_segs(word2))
     max_len = max(seg_count1, seg_count2)
     if max_len == 0:
         return 0.0
@@ -48,8 +73,9 @@ def normalized_edit_distance(word1, word2):
 def get_features(word):
     ft = _get_feature_table()
     try:
+        word = normalize_ipa_input(word)
         # Panphon feature vectors are segment-level, not codepoint-level.
-        segments = ft.segs_safe(word)
+        segments = ft.ipa_segs(word)
         fts = ft.word_fts(word)
         return [
             {"segment": seg, "features": dict(zip(ft.names, fv.numeric()))}

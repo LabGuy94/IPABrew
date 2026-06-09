@@ -5,7 +5,7 @@ from collections import defaultdict
 
 from lingpy import Multiple
 
-from app.ipa_utils import feature_edit_distance, normalized_edit_distance
+from app.ipa_utils import feature_edit_distance, normalize_ipa_input, normalized_edit_distance
 from app.glottochronology import estimate_from_ned
 from app.services import dpd_service
 
@@ -76,7 +76,11 @@ def align_words(words):
     if len(words) < 2:
         return {"error": "Need at least 2 words to align"}
 
-    clean = [w for w in words if w and w.strip()]
+    clean = []
+    for word in words:
+        ipa = normalize_ipa_input(word)
+        if ipa:
+            clean.append(ipa)
     if len(clean) < 2:
         return {"error": "Need at least 2 non-empty words"}
 
@@ -109,8 +113,9 @@ def reconstruct_from_cognates(cognate_words, language_labels=None):
     clean_words = []
     clean_labels = []
     for i, w in enumerate(cognate_words):
-        if w and w.strip() and w != "-":
-            clean_words.append(w.strip())
+        ipa = normalize_ipa_input(w)
+        if ipa and ipa != "-":
+            clean_words.append(ipa)
             if language_labels and i < len(language_labels):
                 clean_labels.append(language_labels[i])
             else:
@@ -237,7 +242,7 @@ def _parse_ipa_batch(raw_ipa):
     text = str(raw_ipa or "").strip()
     if not text:
         return []
-    return [part.strip() for part in text.split(",") if part.strip()]
+    return [ipa for part in text.split(",") if (ipa := normalize_ipa_input(part))]
 
 
 def _node_display_label(node):
@@ -430,8 +435,8 @@ def _reconstruct_node(node, reconstruct_fn, depth=0):
 
     children = node.get("children")
     if not children:
-        ipa = (node.get("ipa") or "").strip()
-        if not ipa:
+        ipa = normalize_ipa_input(node.get("ipa"))
+        if not ipa or ipa == "-":
             return {"error": f"Descendant '{node.get('label', '?')}' is missing IPA input"}
         return {"label": node.get("label", ""), "ipa": ipa, "type": "descendant", "reconstructed": False}
 
@@ -443,9 +448,9 @@ def _reconstruct_node(node, reconstruct_fn, depth=0):
         resolved_children.append(resolved)
 
     label = node.get("label", "")
-    ipa = (node.get("ipa") or "").strip()
+    ipa = normalize_ipa_input(node.get("ipa"))
 
-    if not ipa:
+    if not ipa or ipa == "-":
         ipa, error = reconstruct_fn(label, resolved_children)
         if error:
             return {"error": error}
@@ -507,8 +512,8 @@ def _collect_ipa_from_children(children):
     """Collect all ipa values from resolved child nodes (recursively flattens)."""
     result = []
     for child in children:
-        ipa = child.get("ipa", "").strip()
-        if ipa:
+        ipa = normalize_ipa_input(child.get("ipa"))
+        if ipa and ipa != "-":
             result.append(ipa)
     return result
 

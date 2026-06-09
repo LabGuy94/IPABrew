@@ -2,7 +2,18 @@ from app.ipa_utils import (
     feature_edit_distance,
     normalized_edit_distance,
     get_features,
+    normalize_ipa_input,
 )
+
+
+class TestNormalizeIpaInput:
+    def test_strips_common_transcription_delimiters(self):
+        assert normalize_ipa_input("/paˈtɾe/") == "paˈtɾe"
+        assert normalize_ipa_input("[peɾe]") == "peɾe"
+
+    def test_preserves_unmatched_or_internal_delimiters(self):
+        assert normalize_ipa_input("/a/b/") == "a/b"
+        assert normalize_ipa_input("[peɾe") == "[peɾe"
 
 
 class TestNormalizedEditDistance:
@@ -38,6 +49,11 @@ class TestNormalizedEditDistance:
         ned_far = normalized_edit_distance("padre", "mɛːr")
         assert ned_close < ned_far
 
+    def test_transcription_delimiters_do_not_change_normalization(self):
+        bare = normalized_edit_distance("paˈtɾe", "peɾe")
+        wrapped = normalized_edit_distance("/paˈtɾe/", "[peɾe]")
+        assert wrapped == bare
+
 
 class TestFeatureEditDistance:
     def test_identity_returns_zero(self):
@@ -68,6 +84,10 @@ class TestGetFeatures:
     def test_multi_codepoint_segment_labels_preserved(self):
         result = get_features("t͡sa")
         assert [entry["segment"] for entry in result] == ["t͡s", "a"]
+
+    def test_transcription_delimiters_are_not_reported_as_segments(self):
+        result = get_features("/paˈtɾe/")
+        assert [entry["segment"] for entry in result] == ["p", "a", "t", "ɾ", "e"]
 
     def test_empty_string(self):
         result = get_features("")
