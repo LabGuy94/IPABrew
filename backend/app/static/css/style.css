@@ -65,7 +65,7 @@ main {
 
 .app-layout {
     display: grid;
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
     gap: 20px;
     align-items: start;
     max-width: 650px;
@@ -73,7 +73,7 @@ main {
 }
 
 .app-layout.has-results {
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
     max-width: none;
 }
 
@@ -99,7 +99,7 @@ main {
 
 @media (max-width: 1000px) {
     .app-layout, .app-layout.has-results {
-        grid-template-columns: 1fr;
+        grid-template-columns: minmax(0, 1fr);
         max-width: none;
     }
     .results-panel {
@@ -492,6 +492,15 @@ main {
     fill: var(--text-muted);
     font-size: 9px;
     font-style: italic;
+}
+
+.node-label,
+.node-age-tag {
+    /* Halo in the background colour so links never cut through text. */
+    paint-order: stroke;
+    stroke: var(--bg);
+    stroke-width: 3px;
+    stroke-linejoin: round;
 }
 
 .tree-link {

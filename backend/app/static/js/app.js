@@ -921,39 +921,93 @@ function collectInternalNodes(node, result) {
 
 // D3 tree visualization
 
+const TREE_ROW_HEIGHT = 46;
+const TREE_MIN_COLUMN_GAP = 90;
+const TREE_LABEL_OFFSET = 12;
+const TREE_LABEL_PADDING = 36;
+const TREE_ELBOW_OFFSET = 16;
+const TREE_MARGIN = { top: 34, right: 24, bottom: 30, left: 24 };
+
+let treeMeasureCtx = null;
+
+function measureTreeText(text, fontSize) {
+    if (!treeMeasureCtx) {
+        treeMeasureCtx = document.createElement('canvas').getContext('2d');
+    }
+    const mono = getComputedStyle(document.documentElement).getPropertyValue('--font-mono').trim() || 'monospace';
+    treeMeasureCtx.font = `${fontSize}px ${mono}`;
+    return treeMeasureCtx.measureText(text).width;
+}
+
+function treeNodeLabel(d) {
+    const label = d.data.label || '';
+    const ipa = d.data.ipa || '';
+    const star = d.data.reconstructed ? '*' : '';
+    return label ? `${label}: ${star}${ipa}` : `${star}${ipa}`;
+}
+
+function treeNodeAge(d) {
+    const years = d.data.estimated_age_years;
+    return years !== undefined && years > 0 ? `~${years.toLocaleString()} yrs` : '';
+}
+
 function renderTreeInto(container, treeData, animate = true) {
     container.innerHTML = '';
 
     const root = d3.hierarchy(treeData, d => d.children);
-    const nodeCount = root.descendants().length;
+    const descendants = root.descendants();
+    const leaves = root.leaves();
 
-    const width = Math.max(600, container.clientWidth || 600);
-    const height = Math.max(350, nodeCount * 55);
-    const margin = { top: 30, right: 220, bottom: 30, left: 50 };
+    // Cluster layout puts every leaf in its own row and in the last column,
+    // so leaf labels (drawn to the right) never run into other nodes.
+    d3.cluster().nodeSize([TREE_ROW_HEIGHT, 1]).separation(() => 1)(root);
+
+    // Internal labels sit to the left of their node, between it and its
+    // parent, so each column is as wide as its widest internal label.
+    const textWidth = d => Math.max(measureTreeText(treeNodeLabel(d), 11), measureTreeText(treeNodeAge(d), 9));
+    const maxDepth = d3.max(leaves, d => d.depth);
+    const columnGap = [];
+    for (let depth = 1; depth <= maxDepth; depth++) {
+        const widest = d3.max(descendants.filter(d => d.depth === depth && d.children), textWidth) || 0;
+        columnGap.push(Math.max(TREE_MIN_COLUMN_GAP, widest + TREE_LABEL_OFFSET + TREE_LABEL_PADDING));
+    }
+    const columnX = [0];
+    columnGap.forEach(gap => columnX.push(columnX[columnX.length - 1] + gap));
+    descendants.forEach(d => { d.y = d.children ? columnX[d.depth] : columnX[maxDepth]; });
+
+    const rootLabelWidth = textWidth(root) + TREE_LABEL_OFFSET;
+    const leafLabelWidth = d3.max(leaves, d => measureTreeText(treeNodeLabel(d), 11)) + TREE_LABEL_OFFSET;
+    const xMin = d3.min(descendants, d => d.x);
+    const xMax = d3.max(descendants, d => d.x);
+
+    const offsetX = TREE_MARGIN.left + rootLabelWidth;
+    const offsetY = TREE_MARGIN.top - xMin;
+    const width = Math.ceil(offsetX + columnX[maxDepth] + leafLabelWidth + TREE_MARGIN.right);
+    const height = Math.ceil(xMax - xMin + TREE_MARGIN.top + TREE_MARGIN.bottom);
 
     const svg = d3.select(container)
         .append('svg')
         .attr('width', width)
-        .attr('height', height);
+        .attr('height', height)
+        .attr('viewBox', `0 0 ${width} ${height}`);
 
     const g = svg.append('g')
-        .attr('transform', `translate(${margin.left},${margin.top})`);
+        .attr('transform', `translate(${offsetX},${offsetY})`);
 
-    const innerW = width - margin.left - margin.right;
-    const innerH = height - margin.top - margin.bottom;
-
-    const treeLayout = d3.tree().size([innerH, innerW]);
-    treeLayout(root);
-
+    // Elbow links turn just right of the parent, so the vertical run stays
+    // clear of the child labels that sit on the horizontal run.
     const links = g.selectAll('.tree-link')
         .data(root.links())
         .enter()
         .append('path')
         .attr('class', 'tree-link')
-        .attr('d', d3.linkHorizontal().x(d => d.y).y(d => d.x));
+        .attr('d', d => {
+            const elbowX = d.source.y + TREE_ELBOW_OFFSET;
+            return `M${d.source.y},${d.source.x}H${elbowX}V${d.target.x}H${d.target.y}`;
+        });
 
     const nodes = g.selectAll('.tree-node')
-        .data(root.descendants())
+        .data(descendants)
         .enter()
         .append('g')
         .attr('class', d => `tree-node ${d.data.type || ''}`)
@@ -976,25 +1030,25 @@ function renderTreeInto(container, treeData, animate = true) {
             return 5;
         });
 
+    // Internal nodes: label above-left and age below-left, clear of the
+    // outgoing link that leaves from the node's right side. Leaves: label right.
     nodes.append('text')
-        .attr('dy', '0.35em')
-        .attr('x', d => d.children ? -14 : 14)
+        .attr('dy', d => d.children ? '-0.55em' : '0.35em')
+        .attr('x', d => d.children ? -TREE_LABEL_OFFSET : TREE_LABEL_OFFSET)
         .attr('text-anchor', d => d.children ? 'end' : 'start')
         .attr('class', 'node-label')
-        .text(d => {
-            const label = d.data.label || '';
-            const ipa = d.data.ipa || '';
-            const star = d.data.reconstructed ? '*' : '';
-            return `${label}: ${star}${ipa}`;
-        });
+        .text(treeNodeLabel);
 
-    nodes.filter(d => d.data.estimated_age_years !== undefined && d.data.estimated_age_years > 0)
+    nodes.filter(d => treeNodeAge(d))
         .append('text')
-        .attr('dy', '1.6em')
-        .attr('x', d => d.children ? -14 : 14)
+        .attr('dy', d => d.children ? '1.45em' : '1.6em')
+        .attr('x', d => d.children ? -TREE_LABEL_OFFSET : TREE_LABEL_OFFSET)
         .attr('text-anchor', d => d.children ? 'end' : 'start')
         .attr('class', 'node-age-tag')
-        .text(d => `~${d.data.estimated_age_years.toLocaleString()} yrs`);
+        .text(treeNodeAge);
+
+    nodes.append('title')
+        .text(d => [treeNodeLabel(d), treeNodeAge(d)].filter(Boolean).join('\n'));
 
     return svg.node();
 }
@@ -1353,8 +1407,9 @@ function buildSvgExportString(treeData) {
     const styles = document.createElement('style');
     styles.textContent = `
         .tree-link { fill: none; stroke: #8a7e6f; stroke-width: 1.5; }
-        .node-label { font-family: Georgia, serif; font-size: 12px; fill: #3b3228; }
-        .node-age-tag { font-family: Georgia, serif; font-size: 10px; fill: #8a7e6f; }
+        .node-label { font-family: ${getComputedStyle(document.documentElement).getPropertyValue('--font-mono').trim() || 'monospace'}; font-size: 11px; fill: #3b3228; }
+        .node-age-tag { font-family: ${getComputedStyle(document.documentElement).getPropertyValue('--font-mono').trim() || 'monospace'}; font-size: 9px; fill: #8a7e6f; }
+        .node-label, .node-age-tag { paint-order: stroke; stroke: #f4efe6; stroke-width: 3px; stroke-linejoin: round; }
         .root circle { fill: #8b5e3c; }
         .intermediate circle { fill: #5b6e8a; }
         circle { fill: #4a6741; }
