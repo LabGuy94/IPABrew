@@ -9,6 +9,15 @@ async function apiPost(endpoint, body) {
     return resp.json();
 }
 
+function escapeHtml(value) {
+    return String(value ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
+
 function showError(container, message) {
     container.innerHTML = '';
     const div = document.createElement('div');
@@ -842,11 +851,11 @@ function displaySimilarityMatrix(matrix) {
     }
 
     let html = '<table class="sim-matrix"><thead><tr><th></th>';
-    labels.forEach(l => { html += `<th>${l}</th>`; });
+    labels.forEach(l => { html += `<th>${escapeHtml(l)}</th>`; });
     html += '</tr></thead><tbody>';
 
     for (let i = 0; i < n; i++) {
-        html += `<tr><td class="sim-row-label">${labels[i]}</td>`;
+        html += `<tr><td class="sim-row-label">${escapeHtml(labels[i])}</td>`;
         for (let j = 0; j < n; j++) {
             const val = values[i][j];
             const display = val !== null ? val.toFixed(3) : '\u2014';
@@ -885,15 +894,15 @@ function displayAges(tree) {
     // Find max age for bar scaling
     const maxAge = Math.max(...nodes.map(n => n.estimated_age_years || 0), 1);
 
-    let html = '<table class="ages-table"><thead><tr><th>Node</th><th>IPA</th><th>Est. Age</th><th>Depth</th></tr></thead><tbody>';
+    let html = '<table class="ages-table"><thead><tr><th>Node</th><th>IPA</th><th>Est. Age</th><th>Relative Age</th></tr></thead><tbody>';
 
     nodes.forEach(n => {
         const years = n.estimated_age_years || 0;
         const barWidth = Math.round((years / maxAge) * 100);
         const star = n.reconstructed ? '*' : '';
         html += `<tr>
-            <td>${n.label}</td>
-            <td class="mono-cell">${star}${n.ipa}</td>
+            <td>${escapeHtml(n.label)}</td>
+            <td class="mono-cell">${star}${escapeHtml(n.ipa)}</td>
             <td class="mono-cell">~${years.toLocaleString()} yrs</td>
             <td><div class="age-bar-bg"><div class="age-bar" style="width:${barWidth}%"></div></div></td>
         </tr>`;

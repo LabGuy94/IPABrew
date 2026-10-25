@@ -48,6 +48,8 @@ def load_dataset():
 
 def get_sample(count=20, offset=0):
     data = load_dataset()
+    count = max(count, 0)
+    offset = max(offset, 0)
     subset = data[offset : offset + count]
     return {
         "total": len(data),
@@ -319,9 +321,35 @@ def _reconstruct_single_tree(tree, method="ml"):
     }
 
 
+def _validate_tree_shape(tree):
+    """Check node types iteratively so malformed or very deep input can't crash later recursion."""
+    stack = [(tree, 0)]
+    while stack:
+        node, depth = stack.pop()
+        if depth > MAX_TREE_DEPTH:
+            return f"Tree depth exceeds maximum of {MAX_TREE_DEPTH}"
+        if not isinstance(node, dict):
+            return "Every tree node must be an object"
+        for field in ("label", "ipa"):
+            if node.get(field) is not None and not isinstance(node[field], str):
+                return f"Field '{field}' must be a string"
+        children = node.get("children")
+        if children is None:
+            continue
+        if not isinstance(children, list):
+            return "Field 'children' must be a list"
+        stack.extend((child, depth + 1) for child in children)
+    return None
+
+
 def reconstruct_tree(tree, method="ml"):
     """Reconstruct one or more trees from comma-separated IPA input batches."""
-    if not tree or "children" not in tree or len(tree.get("children", [])) < 1:
+    if not isinstance(tree, dict):
+        return {"error": "Tree must be an object"}
+    error = _validate_tree_shape(tree)
+    if error:
+        return {"error": error}
+    if not tree.get("children"):
         return {"error": "Tree must have at least one intermediate child"}
 
     batch_size, error = _get_tree_batch_size(tree)
@@ -371,29 +399,11 @@ def _compute_ages_in_years(node):
     """Compute estimated age in years for all nodes using Rate of Change Index.
 
     For each internal node, compute the average NED between its IPA and all
-    descendant leaves. Map that NED to an estimated year value via
-    glottochronological estimation. Leaves get age 0 (present day).
+    descendant leaves. Map that NED to an estimated year value with the same
+    NED divergence table used by the /date and /ipa/distance endpoints.
+    Leaves get age 0 (present day).
     """
     _assign_age_years(node)
-
-
-def _ned_to_years(ned):
-    """Convert a normalized edit distance to an estimated age in years.
-
-    Uses a continuous logarithmic model calibrated to known language family
-    divergence points. The formula is derived from the Swadesh retention rate
-    model: years = -ln(1 - ned) / (2 * ln(r)) * 1000, with r = 0.86.
-    Clamped to avoid domain errors at extremes.
-    """
-    import math
-    if ned <= 0:
-        return 0
-    if ned >= 1.0:
-        ned = 0.99
-    similarity = 1.0 - ned
-    if similarity <= 0:
-        similarity = 0.01
-    return (math.log(similarity) / (2 * math.log(0.86))) * 1000
 
 
 def _assign_age_years(node):
@@ -422,7 +432,7 @@ def _assign_age_years(node):
             logger.debug("NED computation failed for age estimation", exc_info=True)
 
     avg_ned = (total_ned / count) if count > 0 else 0.0
-    node["estimated_age_years"] = round(_ned_to_years(avg_ned))
+    node["estimated_age_years"] = estimate_from_ned(avg_ned)["estimated_years"]
 
 
 MAX_TREE_DEPTH = 20
@@ -469,11 +479,20 @@ def _reconstruct_node(node, reconstruct_fn, depth=0):
 def _reconstruct_ml(label, children):
     """ML reconstruction strategy using DPD model."""
     cognates = {}
-    for child in children:
+    for i, child in enumerate(children):
         child_ipa = child.get("ipa", "").strip()
-        child_label = child.get("label", "")
-        if child_ipa and child_label:
-            cognates[child_label] = child_ipa
+        if not child_ipa:
+            continue
+        # Keys double as model language names. Known names keep their
+        # embedding; blank or repeated labels get a unique key so no
+        # cognate is silently dropped.
+        key = child.get("label", "").strip() or f"_child{i + 1}"
+        if key in cognates:
+            suffix = 2
+            while f"{key}#{suffix}" in cognates:
+                suffix += 1
+            key = f"{key}#{suffix}"
+        cognates[key] = child_ipa
     if len(cognates) < 2:
         if len(cognates) == 1:
             return list(cognates.values())[0], None
